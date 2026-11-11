@@ -1,0 +1,26 @@
+name: Keep-Alive Backend Render (Cada 14 min)
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-backend:
+    name: Ping /health al Backend de Auditoría
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar endpoint /health del Backend
+        run: |
+          TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ -z "$TARGET_URL" ]; then
+            echo "Secret RENDER_BACKEND_URL no configurado todavía. Configúralo en Settings > Secrets and variables > Actions."
+            exit 0
+          fi
+          TARGET_URL="${TARGET_URL%/}"
+          echo "Enviando ping a $TARGET_URL/health ..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 65 "$TARGET_URL/health")
+          echo "HTTP recibido: $HTTP_CODE"
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Aviso: código HTTP $HTTP_CODE"
+          fi

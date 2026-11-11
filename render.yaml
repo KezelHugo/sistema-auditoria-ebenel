@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: sistema-auditoria-ebenel-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: ERP_API_BASE_URL
+        value: https://simulador-erp-ebenel.onrender.com
+      - key: ERP_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: SEED_GERENCIA_EMAIL
+        value: gerencia@ebenel.com.pe
+      - key: SEED_GERENCIA_PASSWORD
+        sync: false
+      - key: SEED_EMPLEADO_EMAIL
+        value: logistica@ebenel.com.pe
+      - key: SEED_EMPLEADO_PASSWORD
+        sync: false
