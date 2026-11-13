@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import Layout from '../components/Layout';
 import ModalDetalleOC from '../components/ModalDetalleOC';
 import ModalGestionIncidencia from '../components/ModalGestionIncidencia';
+import Paginacion from '../components/Paginacion';
 import {
   formatearMoneda,
   formatearFechaCortaLima,
@@ -29,12 +30,16 @@ export default function IncidenciasPage() {
       : 'ACTIVAS'
   );
   const [busqueda, setBusqueda] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [totalRegistros, setTotalRegistros] = useState(0);
   const [lista, setLista] = useState([]);
   const [resumen, setResumen] = useState({});
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [ordenDetalleId, setOrdenDetalleId] = useState(null);
   const [incidenciaModal, setIncidenciaModal] = useState(null);
+
+  const ITEMS_POR_PAGINA = 50;
 
   // Sincronizar estado local si cambia el query param en la URL
   useEffect(() => {
@@ -53,6 +58,7 @@ export default function IncidenciasPage() {
 
   const cambiarTipo = (nuevoTipo) => {
     setTipo(nuevoTipo);
+    setPagina(1);
     setSearchParams(prev => {
       const p = new URLSearchParams(prev);
       if (nuevoTipo === 'TODAS') {
@@ -66,6 +72,7 @@ export default function IncidenciasPage() {
 
   const cambiarEstado = (nuevoEstado) => {
     setEstado(nuevoEstado);
+    setPagina(1);
     setSearchParams(prev => {
       const p = new URLSearchParams(prev);
       if (nuevoEstado === 'ACTIVAS') {
@@ -84,18 +91,20 @@ export default function IncidenciasPage() {
       const qs = new URLSearchParams({
         tipo,
         estado,
-        limit: '150'
+        limit: String(ITEMS_POR_PAGINA),
+        offset: String((pagina - 1) * ITEMS_POR_PAGINA)
       });
       if (busqueda.trim()) qs.set('q', busqueda.trim());
       const res = await api.get(`/api/incidencias?${qs.toString()}`);
       setLista(res.data || []);
+      setTotalRegistros(res.total || 0);
       setResumen(res.resumen_tipos || {});
     } catch (err) {
       setError(err.message);
     } finally {
       setCargando(false);
     }
-  }, [tipo, estado, busqueda]);
+  }, [tipo, estado, busqueda, pagina]);
 
   useEffect(() => {
     const timer = setTimeout(cargar, 200);
@@ -144,7 +153,10 @@ export default function IncidenciasPage() {
             type="text"
             placeholder="Buscar por N° OC, SKU, producto o laboratorio..."
             value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
+            onChange={e => {
+              setBusqueda(e.target.value);
+              setPagina(1);
+            }}
             className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:bg-white focus:outline-none"
           />
         </div>
@@ -179,8 +191,9 @@ export default function IncidenciasPage() {
             No se encontraron incidencias con los filtros actuales.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">OC / Proveedor</th>
@@ -305,6 +318,14 @@ export default function IncidenciasPage() {
               </tbody>
             </table>
           </div>
+          <Paginacion
+            paginaActual={pagina}
+            totalRegistros={totalRegistros}
+            porPagina={ITEMS_POR_PAGINA}
+            alCambiarPagina={setPagina}
+            nombreEntidad="incidencias"
+          />
+        </>
         )}
       </div>
 
