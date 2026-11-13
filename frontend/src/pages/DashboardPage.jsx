@@ -72,6 +72,7 @@ export default function DashboardPage() {
 
   const desgloseOcs = resInc.desglose_ocs_afectadas || {};
   const totalOcsConFallas = desgloseOcs.total_ocs_con_incidencias ?? ((resAbast.ocs_con_incidencias || 0) + (resAbast.ocs_vencidas_sin_entrega || 0));
+  const activasTotal = (resInc.abiertas || 0) + (resInc.en_gestion || 0);
 
   const catFaltantes = pareto.find(p => p.tipo === 'ENTREGA_INCOMPLETA') || {};
   const catRetencion = pareto.find(p => p.tipo === 'PRODUCTO_INMOVILIZADO_PRECIO') || {};
@@ -134,7 +135,7 @@ export default function DashboardPage() {
                   Órdenes con Incidencias
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className="rounded-lg bg-rose-50 p-2 text-rose-700 group-hover:bg-rose-100 transition">
+                  <div className={`rounded-lg p-2 transition ${activasTotal > 0 ? 'bg-rose-50 text-rose-700 group-hover:bg-rose-100' : 'bg-slate-100 text-slate-600'}`}>
                     <AlertTriangle className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-rose-600 transition" />
@@ -142,14 +143,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {totalOcsConFallas}
+                  {activasTotal}
                 </span>
-                <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 tabular-nums">
-                  ({Number(resInc.tasa_ocs_con_incidencia_pct || 0).toFixed(1)}% del total)
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${activasTotal > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {activasTotal === 1 ? '1 activa' : `${activasTotal} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                {resAbast.ocs_conformes || 0} conformes sin observaciones • {resAbast.total_ocs || 0} OCs totales
+                Total: {resInc.total_incidencias || 0} ({totalOcsConFallas} OCs) • <span className="font-medium text-emerald-700">{resInc.resueltas || 0} resueltas</span>
               </p>
             </Link>
 
@@ -163,7 +164,7 @@ export default function DashboardPage() {
                   Órdenes con Faltantes
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className="rounded-lg bg-amber-50 p-2 text-amber-700 group-hover:bg-amber-100 transition">
+                  <div className={`rounded-lg p-2 transition ${(catFaltantes.abiertas || 0) > 0 ? 'bg-amber-50 text-amber-700 group-hover:bg-amber-100' : 'bg-slate-100 text-slate-600'}`}>
                     <PackageX className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-amber-600 transition" />
@@ -171,14 +172,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {desgloseOcs.por_faltantes ?? (catFaltantes.cantidad > 0 ? 1 : 0)}
+                  {catFaltantes.abiertas || 0}
                 </span>
-                <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 tabular-nums">
-                  {catFaltantes.cantidad || 0} anomalías
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${(catFaltantes.abiertas || 0) > 0 ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {(catFaltantes.abiertas || 0) === 1 ? '1 activa' : `${catFaltantes.abiertas || 0} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                {catFaltantes.abiertas || 0} activas • {catFaltantes.resueltas || 0} resueltas
+                Total: {catFaltantes.cantidad || 0} ({desgloseOcs.por_faltantes ?? 0} OCs) • <span className="font-medium text-emerald-700">{catFaltantes.resueltas || 0} resueltas</span>
               </p>
             </Link>
 
@@ -192,7 +193,7 @@ export default function DashboardPage() {
                   Órdenes con Retención
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className="rounded-lg bg-rose-50 p-2 text-rose-700 group-hover:bg-rose-100 transition">
+                  <div className={`rounded-lg p-2 transition ${(catRetencion.abiertas || 0) > 0 ? 'bg-rose-50 text-rose-700 group-hover:bg-rose-100' : 'bg-slate-100 text-slate-600'}`}>
                     <ShieldAlert className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-rose-600 transition" />
@@ -200,14 +201,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {desgloseOcs.por_retencion_precio ?? (catRetencion.cantidad > 0 ? 1 : 0)}
+                  {catRetencion.abiertas || 0}
                 </span>
-                <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 tabular-nums">
-                  {catRetencion.cantidad || 0} anomalías
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${(catRetencion.abiertas || 0) > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {(catRetencion.abiertas || 0) === 1 ? '1 activa' : `${catRetencion.abiertas || 0} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                {catRetencion.abiertas || 0} activas • {catRetencion.resueltas || 0} resueltas
+                Total: {catRetencion.cantidad || 0} ({desgloseOcs.por_retencion_precio ?? 0} OCs) • <span className="font-medium text-emerald-700">{catRetencion.resueltas || 0} resueltas</span>
               </p>
             </Link>
 
@@ -221,7 +222,7 @@ export default function DashboardPage() {
                   Órdenes con Retraso
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className="rounded-lg bg-orange-50 p-2 text-orange-700 group-hover:bg-orange-100 transition">
+                  <div className={`rounded-lg p-2 transition ${(catRetraso.abiertas || 0) > 0 ? 'bg-orange-50 text-orange-700 group-hover:bg-orange-100' : 'bg-slate-100 text-slate-600'}`}>
                     <Clock className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-orange-600 transition" />
@@ -229,14 +230,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {desgloseOcs.por_retraso ?? (catRetraso.cantidad > 0 ? 1 : 0)}
+                  {catRetraso.abiertas || 0}
                 </span>
-                <span className="rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800 tabular-nums">
-                  {catRetraso.cantidad || 0} anomalías
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${(catRetraso.abiertas || 0) > 0 ? 'border-orange-200 bg-orange-50 text-orange-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {(catRetraso.abiertas || 0) === 1 ? '1 activa' : `${catRetraso.abiertas || 0} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                {catRetraso.abiertas || 0} activas • {catRetraso.resueltas || 0} resueltas
+                Total: {catRetraso.cantidad || 0} ({desgloseOcs.por_retraso ?? 0} OCs) • <span className="font-medium text-emerald-700">{catRetraso.resueltas || 0} resueltas</span>
               </p>
             </Link>
           </div>
