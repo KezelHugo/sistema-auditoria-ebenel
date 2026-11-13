@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, Eye } from 'lucide-react';
 import { api } from '../api/client';
 import Layout from '../components/Layout';
@@ -13,8 +14,19 @@ import {
 } from '../utils/formatters';
 
 export default function IncidenciasPage() {
-  const [tipo, setTipo] = useState('TODAS');
-  const [estado, setEstado] = useState('ACTIVAS');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tipoParam = searchParams.get('tipo');
+  const [tipo, setTipo] = useState(
+    tipoParam && ['TODAS', 'ENTREGA_INCOMPLETA', 'PRODUCTO_INMOVILIZADO_PRECIO', 'RETRASO_ENTREGA'].includes(tipoParam)
+      ? tipoParam
+      : 'TODAS'
+  );
+  const estadoParam = searchParams.get('estado');
+  const [estado, setEstado] = useState(
+    estadoParam && ['TODOS', 'ACTIVAS', 'ABIERTA', 'EN_GESTION', 'RESUELTA_CAPITAL_LIBERADO', 'CERRADA_SIN_RECUPERACION'].includes(estadoParam)
+      ? estadoParam
+      : 'ACTIVAS'
+  );
   const [busqueda, setBusqueda] = useState('');
   const [lista, setLista] = useState([]);
   const [resumen, setResumen] = useState({});
@@ -22,6 +34,47 @@ export default function IncidenciasPage() {
   const [error, setError] = useState('');
   const [ordenDetalleId, setOrdenDetalleId] = useState(null);
   const [incidenciaModal, setIncidenciaModal] = useState(null);
+
+  // Sincronizar estado local si cambia el query param en la URL
+  useEffect(() => {
+    const qTipo = searchParams.get('tipo');
+    if (qTipo && ['TODAS', 'ENTREGA_INCOMPLETA', 'PRODUCTO_INMOVILIZADO_PRECIO', 'RETRASO_ENTREGA'].includes(qTipo)) {
+      setTipo(qTipo);
+    } else if (!qTipo) {
+      setTipo('TODAS');
+    }
+
+    const qEstado = searchParams.get('estado');
+    if (qEstado && ['TODOS', 'ACTIVAS', 'ABIERTA', 'EN_GESTION', 'RESUELTA_CAPITAL_LIBERADO', 'CERRADA_SIN_RECUPERACION'].includes(qEstado)) {
+      setEstado(qEstado);
+    }
+  }, [searchParams]);
+
+  const cambiarTipo = (nuevoTipo) => {
+    setTipo(nuevoTipo);
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (nuevoTipo === 'TODAS') {
+        p.delete('tipo');
+      } else {
+        p.set('tipo', nuevoTipo);
+      }
+      return p;
+    });
+  };
+
+  const cambiarEstado = (nuevoEstado) => {
+    setEstado(nuevoEstado);
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (nuevoEstado === 'ACTIVAS') {
+        p.delete('estado');
+      } else {
+        p.set('estado', nuevoEstado);
+      }
+      return p;
+    });
+  };
 
   const cargar = useCallback(async () => {
     setError('');
@@ -63,7 +116,7 @@ export default function IncidenciasPage() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setTipo(tab.id)}
+            onClick={() => cambiarTipo(tab.id)}
             className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-medium transition ${
               tipo === tab.id
                 ? 'border-teal-700 bg-teal-700 text-white shadow-sm'
@@ -99,7 +152,7 @@ export default function IncidenciasPage() {
           <SlidersHorizontal className="h-4 w-4 text-slate-400" />
           <select
             value={estado}
-            onChange={e => setEstado(e.target.value)}
+            onChange={e => cambiarEstado(e.target.value)}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none"
           >
             <option value="ACTIVAS">Pendientes / En Gestión ({resumen.activas ?? 0})</option>

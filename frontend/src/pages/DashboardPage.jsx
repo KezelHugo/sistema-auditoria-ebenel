@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
   AlertTriangle,
-  Wallet,
-  TrendingUp,
+  PackageX,
+  ShieldAlert,
   ArrowUpRight,
   Clock,
-  RefreshCw,
-  Layers
+  RefreshCw
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -71,11 +70,12 @@ export default function DashboardPage() {
   const topLabs = (data?.ranking_laboratorios || []).slice(0, 5);
   const recientes = data?.alertas_recientes || [];
 
-  const activasTotal = (resInc.abiertas || 0) + (resInc.en_gestion || 0);
   const desgloseOcs = resInc.desglose_ocs_afectadas || {};
   const totalOcsConFallas = desgloseOcs.total_ocs_con_incidencias ?? ((resAbast.ocs_con_incidencias || 0) + (resAbast.ocs_vencidas_sin_entrega || 0));
-  const regularizadoPen = Number(((rent.capital_inmovilizado_liberado_pen || 0) + (rent.faltantes_valor_recuperado_pen || 0)).toFixed(2));
-  const pendientePen = Number(((rent.capital_inmovilizado_pendiente_pen || 0) + (rent.faltantes_valor_pendiente_pen || 0)).toFixed(2));
+
+  const catFaltantes = pareto.find(p => p.tipo === 'ENTREGA_INCOMPLETA') || {};
+  const catRetencion = pareto.find(p => p.tipo === 'PRODUCTO_INMOVILIZADO_PRECIO') || {};
+  const catRetraso = pareto.find(p => p.tipo === 'RETRASO_ENTREGA') || {};
 
   return (
     <Layout statusExterno={data?.estado_erp || null} onSyncComplete={cargarDashboard}>
@@ -125,88 +125,120 @@ export default function DashboardPage() {
           {/* 4 Indicadores Logísticos y Operativos */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {/* Card 1: Órdenes con Incidencias */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <Link
+              to="/incidencias"
+              className="group block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Órdenes con Incidencias</span>
-                <div className="rounded-lg bg-rose-50 p-2 text-rose-700">
-                  <AlertTriangle className="h-4 w-4" />
+                <span className="text-xs font-medium text-slate-500 group-hover:text-slate-800 transition">
+                  Órdenes con Incidencias
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className="rounded-lg bg-rose-50 p-2 text-rose-700 group-hover:bg-rose-100 transition">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-rose-600 transition" />
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
                   {totalOcsConFallas}
                 </span>
-                <span className="text-xs font-medium text-rose-700 tabular-nums">
+                <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 tabular-nums">
                   ({Number(resInc.tasa_ocs_con_incidencia_pct || 0).toFixed(1)}% del total)
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
                 {resAbast.ocs_conformes || 0} conformes sin observaciones • {resAbast.total_ocs || 0} OCs totales
               </p>
-            </div>
+            </Link>
 
-            {/* Card 2: Órdenes Observadas por Causa */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            {/* Card 2: Órdenes con Faltantes */}
+            <Link
+              to="/incidencias?tipo=ENTREGA_INCOMPLETA"
+              className="group block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-amber-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Órdenes Observadas por Causa</span>
-                <div className="rounded-lg bg-amber-50 p-2 text-amber-700">
-                  <Layers className="h-4 w-4" />
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 tabular-nums">
-                  Faltas: {desgloseOcs.por_faltantes ?? (pareto.find(p => p.tipo === 'ENTREGA_INCOMPLETA')?.cantidad || 0)}
+                <span className="text-xs font-medium text-slate-500 group-hover:text-slate-800 transition">
+                  Órdenes con Faltantes
                 </span>
-                <span className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-800 tabular-nums">
-                  Retención: {desgloseOcs.por_retencion_precio ?? (pareto.find(p => p.tipo === 'PRODUCTO_INMOVILIZADO_PRECIO')?.cantidad || 0)}
-                </span>
-                <span className="inline-flex items-center rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-semibold text-orange-800 tabular-nums">
-                  Retraso: {desgloseOcs.por_retraso ?? (pareto.find(p => p.tipo === 'RETRASO_ENTREGA')?.cantidad || 0)}
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                {resInc.total_incidencias || 0} anomalías registradas ({activasTotal} pendientes de resolución)
-              </p>
-            </div>
-
-            {/* Card 3: Mercadería Retenida en Almacén */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Mercadería Retenida en Almacén</span>
-                <div className="rounded-lg bg-rose-50 p-2 text-rose-700">
-                  <Wallet className="h-4 w-4" />
+                <div className="flex items-center gap-1.5">
+                  <div className="rounded-lg bg-amber-50 p-2 text-amber-700 group-hover:bg-amber-100 transition">
+                    <PackageX className="h-4 w-4" />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-amber-600 transition" />
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {formatearMoneda(rent.capital_inmovilizado_pendiente_pen)}
+                  {desgloseOcs.por_faltantes ?? (catFaltantes.cantidad > 0 ? 1 : 0)}
+                </span>
+                <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 tabular-nums">
+                  {catFaltantes.cantidad || 0} anomalías
                 </span>
               </div>
-              <p className="mt-2 text-xs font-medium text-emerald-700 tabular-nums">
-                Liberado: {formatearMoneda(rent.capital_inmovilizado_liberado_pen)} ({Number(rent.tasa_liberacion_capital_pct || 0).toFixed(1)}%)
+              <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                {catFaltantes.abiertas || 0} activas • {catFaltantes.resueltas || 0} resueltas
               </p>
-            </div>
+            </Link>
 
-            {/* Card 4: Monto Regularizado con Proveedores */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            {/* Card 3: Órdenes con Retención */}
+            <Link
+              to="/incidencias?tipo=PRODUCTO_INMOVILIZADO_PRECIO"
+              className="group block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Monto Regularizado con Proveedores</span>
-                <div className="rounded-lg bg-teal-50 p-2 text-teal-700">
-                  <TrendingUp className="h-4 w-4" />
+                <span className="text-xs font-medium text-slate-500 group-hover:text-slate-800 transition">
+                  Órdenes con Retención
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className="rounded-lg bg-rose-50 p-2 text-rose-700 group-hover:bg-rose-100 transition">
+                    <ShieldAlert className="h-4 w-4" />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-rose-600 transition" />
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {formatearMoneda(regularizadoPen)}
+                  {desgloseOcs.por_retencion_precio ?? (catRetencion.cantidad > 0 ? 1 : 0)}
                 </span>
-                <span className="text-xs text-slate-500 tabular-nums">
-                  ({resInc.resueltas || 0} reclamos resueltos)
+                <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 tabular-nums">
+                  {catRetencion.cantidad || 0} anomalías
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                Pendiente: {formatearMoneda(pendientePen)} • {rent.horas_hombre_ahorradas || 0}h ahorradas
+                {catRetencion.abiertas || 0} activas • {catRetencion.resueltas || 0} resueltas
               </p>
-            </div>
+            </Link>
+
+            {/* Card 4: Órdenes con Retraso */}
+            <Link
+              to="/incidencias?tipo=RETRASO_ENTREGA"
+              className="group block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-orange-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-500 group-hover:text-slate-800 transition">
+                  Órdenes con Retraso
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className="rounded-lg bg-orange-50 p-2 text-orange-700 group-hover:bg-orange-100 transition">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-orange-600 transition" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
+                  {desgloseOcs.por_retraso ?? (catRetraso.cantidad > 0 ? 1 : 0)}
+                </span>
+                <span className="rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800 tabular-nums">
+                  {catRetraso.cantidad || 0} anomalías
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                {catRetraso.abiertas || 0} activas • {catRetraso.resueltas || 0} resueltas
+              </p>
+            </Link>
           </div>
 
           {/* Gráficos principales */}
