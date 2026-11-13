@@ -188,12 +188,12 @@ export default function ConfiguracionPage() {
 
             {/* Parámetros del Algoritmo y Rentabilidad */}
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-6">
-              <h2 className="text-sm font-semibold text-slate-900">Tolerancias de Conciliación y Analítica ROI</h2>
+              <h2 className="text-sm font-semibold text-slate-900">Tolerancias de Conciliación y Margen Comercial</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Reglas aplicadas por el algoritmo de auditoría automática y el cálculo de lucro cesante.
+                Parámetros aplicados por el algoritmo de auditoría automática para detección de sobreprecios, retrasos y margen protegido.
               </p>
 
-              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-700">Tolerancia precio (%)</label>
                   <input
@@ -205,6 +205,7 @@ export default function ConfiguracionPage() {
                     onChange={e => setForm({ ...form, tolerancia_precio_pct: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
                   />
+                  <p className="mt-1 text-[11px] text-slate-400">Variación permitida en facturación</p>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-700">Tolerancia retraso (días)</label>
@@ -216,9 +217,10 @@ export default function ConfiguracionPage() {
                     onChange={e => setForm({ ...form, tolerancia_dias_retraso: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
                   />
+                  <p className="mt-1 text-[11px] text-slate-400">Días de gracia tras fecha pactada</p>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">Margen bruto comercial (%)</label>
+                  <label className="mb-1 block text-xs font-medium text-slate-700">Margen comercial (%)</label>
                   <input
                     type="number"
                     step="0.5"
@@ -228,38 +230,7 @@ export default function ConfiguracionPage() {
                     onChange={e => setForm({ ...form, margen_rentabilidad_pct: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
                   />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">Costo hora operativa (S/)</label>
-                  <input
-                    type="number"
-                    step="0.25"
-                    min={0}
-                    value={form.costo_hora_operativa}
-                    onChange={e => setForm({ ...form, costo_hora_operativa: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">Horas manuales ahorradas/sem</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min={0}
-                    value={form.horas_manuales_semana}
-                    onChange={e => setForm({ ...form, horas_manuales_semana: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">Despachos base/mes</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={form.despachos_mensuales_base}
-                    onChange={e => setForm({ ...form, despachos_mensuales_base: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
-                  />
+                  <p className="mt-1 text-[11px] text-slate-400">Margen de ganancia en ventas</p>
                 </div>
               </div>
             </div>

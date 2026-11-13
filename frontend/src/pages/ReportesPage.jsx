@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Download, Printer, Wallet, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
+import { Download, Printer, Wallet, TrendingUp, CheckCircle2, HelpCircle } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -20,6 +20,16 @@ export default function ReportesPage() {
   const [cargando, setCargando] = useState(true);
   const [exportando, setExportando] = useState(false);
   const [error, setError] = useState('');
+
+  const [definicionAbierta, setDefinicionAbierta] = useState({
+    capital: false,
+    margen: false,
+    cumplimiento: false
+  });
+
+  const toggleDefinicion = (clave) => {
+    setDefinicionAbierta(prev => ({ ...prev, [clave]: !prev[clave] }));
+  };
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -58,12 +68,7 @@ export default function ReportesPage() {
   const labs = data?.ranking_laboratorios || [];
 
   const capLiberado = Number(rent.capital_inmovilizado_liberado_pen || 0);
-  const metaCap = Number(rent.meta_mensual_capital_pen || 10000);
-  const pctMetaCap = Math.min(100, (capLiberado / metaCap) * 100);
-
   const lucroRec = Number(rent.lucro_cesante_recuperado_pen || 0);
-  const metaLucro = Number(rent.meta_mensual_lucro_cesante_pen || 2000);
-  const pctMetaLucro = Math.min(100, (lucroRec / metaLucro) * 100);
 
   return (
     <Layout onSyncComplete={cargar}>
@@ -120,64 +125,130 @@ export default function ReportesPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Metas Financieras de Mitigación */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {/* Indicadores de Rentabilidad y Abastecimiento */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* Card 1: Capital Inmovilizado Liberado */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>Capital Inmovilizado Liberado</span>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-800">Capital Inmovilizado Liberado</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleDefinicion('capital')}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition ${
+                      definicionAbierta.capital
+                        ? 'border-teal-300 bg-teal-50 text-teal-800'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    title="Ver explicación de este indicador"
+                  >
+                    <HelpCircle className="h-3 w-3" />
+                    <span>{definicionAbierta.capital ? 'Ocultar' : '¿Qué es?'}</span>
+                  </button>
+                </div>
                 <Wallet className="h-4 w-4 text-teal-700" />
               </div>
-              <div className="mt-2.5 text-2xl font-semibold text-slate-900 tabular-nums">
+
+              <div className="mt-2.5 text-2xl font-bold text-slate-900 tabular-nums">
                 {formatearMoneda(capLiberado)}
               </div>
-              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                <div className="h-full rounded-full bg-teal-700" style={{ width: `${pctMetaCap}%` }} />
-              </div>
-              <p className="mt-1.5 text-[11px] text-slate-500 tabular-nums">
-                Meta mensual: {formatearMoneda(metaCap)} • Pendiente: {formatearMoneda(rent.capital_inmovilizado_pendiente_pen)}
+
+              <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                Pendiente por regularizar:{' '}
+                <strong className="font-semibold text-rose-700">
+                  {formatearMoneda(rent.capital_inmovilizado_pendiente_pen)}
+                </strong>
               </p>
+
+              {definicionAbierta.capital && (
+                <div className="mt-3 rounded-lg border border-teal-100 bg-teal-50/70 p-3 text-xs leading-relaxed text-slate-700">
+                  <div className="mb-1 font-semibold text-teal-900">¿Qué representa este valor?</div>
+                  Dinero en mercadería que estuvo retenida en almacén por sobreprecios facturados y que ya fue desbloqueada e ingresada al stock disponible tras gestionarse Notas de Crédito o acuerdos con los laboratorios proveedores.
+                </div>
+              )}
             </div>
 
+            {/* Card 2: Margen Comercial Protegido */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>Margen Comercial Protegido</span>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-800">Margen Comercial Protegido</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleDefinicion('margen')}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition ${
+                      definicionAbierta.margen
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    title="Ver explicación de este indicador"
+                  >
+                    <HelpCircle className="h-3 w-3" />
+                    <span>{definicionAbierta.margen ? 'Ocultar' : '¿Qué es?'}</span>
+                  </button>
+                </div>
                 <TrendingUp className="h-4 w-4 text-emerald-700" />
               </div>
-              <div className="mt-2.5 text-2xl font-semibold text-slate-900 tabular-nums">
+
+              <div className="mt-2.5 text-2xl font-bold text-slate-900 tabular-nums">
                 {formatearMoneda(lucroRec)}
               </div>
-              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                <div className="h-full rounded-full bg-emerald-600" style={{ width: `${pctMetaLucro}%` }} />
-              </div>
-              <p className="mt-1.5 text-[11px] text-slate-500 tabular-nums">
-                Meta mensual: {formatearMoneda(metaLucro)} • En riesgo: {formatearMoneda(rent.lucro_cesante_en_riesgo_pen)}
+
+              <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                En riesgo comercial:{' '}
+                <strong className="font-semibold text-amber-700">
+                  {formatearMoneda(rent.lucro_cesante_en_riesgo_pen)}
+                </strong>
               </p>
+
+              {definicionAbierta.margen && (
+                <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-relaxed text-slate-700">
+                  <div className="mb-1 font-semibold text-emerald-900">¿Qué representa este valor?</div>
+                  Ganancia comercial asegurada para la empresa (margen del 20% sobre los productos recuperados), protegiendo a la droguería de pérdidas por quiebres de inventario o mercadería inmovilizada que no se podía facturar a clientes.
+                </div>
+              )}
             </div>
 
+            {/* Card 3: Cumplimiento de Entregas (Órdenes) */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>Cumplimiento de Entregas (Órdenes)</span>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-800">Cumplimiento de Entregas (Órdenes)</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleDefinicion('cumplimiento')}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition ${
+                      definicionAbierta.cumplimiento
+                        ? 'border-slate-400 bg-slate-100 text-slate-900'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    title="Ver explicación de este indicador"
+                  >
+                    <HelpCircle className="h-3 w-3" />
+                    <span>{definicionAbierta.cumplimiento ? 'Ocultar' : '¿Qué es?'}</span>
+                  </button>
+                </div>
                 <CheckCircle2 className="h-4 w-4 text-slate-700" />
               </div>
-              <div className="mt-2.5 text-2xl font-semibold text-slate-900 tabular-nums">
+
+              <div className="mt-2.5 text-2xl font-bold text-slate-900 tabular-nums">
                 {Number(abast.fill_rate_ordenes_pct ?? 100).toFixed(1)}%
               </div>
-              <p className="mt-3 text-[11px] text-slate-500 tabular-nums">
-                {abast.ocs_conformes || 0} conformes de {abast.ocs_recepcionadas || 0} recibidas ({rent.despachos_protegidos_vs_linea_base ?? 0} despachos protegidos)
-              </p>
-            </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>Ahorro Operativo (Conciliación)</span>
-                <Clock className="h-4 w-4 text-amber-600" />
-              </div>
-              <div className="mt-2.5 text-2xl font-semibold text-slate-900 tabular-nums">
-                {formatearMoneda(rent.ahorro_operativo_pen)}
-              </div>
-              <p className="mt-3 text-[11px] text-slate-500 tabular-nums">
-                {rent.horas_hombre_ahorradas || 0} horas operativas ahorradas mediante conciliación automatizada
+              <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                <strong className="font-semibold text-emerald-700">{abast.ocs_conformes || 0} conformes</strong> de{' '}
+                <strong className="font-semibold text-slate-800">{abast.ocs_recepcionadas || 0} recibidas</strong>
+                {Number(abast.ocs_con_incidencias || 0) > 0 && (
+                  <span> • <strong className="font-semibold text-rose-700">{abast.ocs_con_incidencias} observadas</strong></span>
+                )}
               </p>
+
+              {definicionAbierta.cumplimiento && (
+                <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
+                  <div className="mb-1 font-semibold text-slate-900">¿Qué representa este valor?</div>
+                  Nivel de servicio y efectividad de los laboratorios en la recepción física: porcentaje de órdenes de compra que ingresaron a almacén 100% conformes, sin unidades faltantes, sin sobrecostos facturados y dentro del plazo pactado.
+                </div>
+              )}
             </div>
           </div>
 
