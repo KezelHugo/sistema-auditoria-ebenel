@@ -246,10 +246,23 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
   const despachosProtegidosVsBaseline = Math.max(0, 45 - despachosEnRiesgoActual);
 
   const rankingLaboratorios = Array.from(labsMap.values())
+    .map(lab => {
+      const conformes = Math.max(0, lab.total_ocs - lab.ocs_con_fallas);
+      const confianza = lab.total_ocs > 0 ? Number(((conformes / lab.total_ocs) * 100).toFixed(1)) : 100;
+      return {
+        ...lab,
+        ocs_conformes: conformes,
+        porcentaje_confianza: confianza
+      };
+    })
     .sort((a, b) => b.incidencias - a.incidencias || b.capital_afectado - a.capital_afectado);
 
   const evolucionMensual = Array.from(mensualMap.values())
     .sort((a, b) => a.mes.localeCompare(b.mes));
+
+  const incidenciasActivas = incidenciasFiltradas.filter(
+    i => i.estado_gestion === 'ABIERTA' || i.estado_gestion === 'EN_GESTION'
+  );
 
   return {
     periodo,
@@ -307,7 +320,7 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
     pareto,
     ranking_laboratorios: rankingLaboratorios,
     evolucion_mensual: evolucionMensual,
-    alertas_recientes: incidenciasFiltradas.slice(0, 8)
+    alertas_recientes: incidenciasActivas
   };
 }
 
