@@ -115,11 +115,18 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
     if (estado === 'CON_INCIDENCIAS' || estado === 'VENCIDA_SIN_ENTREGA') mStat.ocs_con_incidencias++;
   }
 
-  // Contadores por categoría Pareto y recuperación financiera
+  // Contadores por categoría de incidencia y recuperación financiera
   const categoriasPareto = {
-    ENTREGA_INCOMPLETA: { tipo: 'ENTREGA_INCOMPLETA', etiqueta: 'Entregas Incompletas (Faltantes)', referencia_tesis_pct: 48.0, cantidad: 0, abiertas: 0, resueltas: 0, valor_afectado: 0, valor_liberado: 0 },
-    PRODUCTO_INMOVILIZADO_PRECIO: { tipo: 'PRODUCTO_INMOVILIZADO_PRECIO', etiqueta: 'Productos Inmovilizados (Precio)', referencia_tesis_pct: 40.0, cantidad: 0, abiertas: 0, resueltas: 0, valor_afectado: 0, valor_liberado: 0 },
-    RETRASO_ENTREGA: { tipo: 'RETRASO_ENTREGA', etiqueta: 'Retrasos en Entrega', referencia_tesis_pct: 12.0, cantidad: 0, abiertas: 0, resueltas: 0, valor_afectado: 0, valor_liberado: 0 }
+    ENTREGA_INCOMPLETA: { tipo: 'ENTREGA_INCOMPLETA', etiqueta: 'Entregas Incompletas (Faltantes)', cantidad: 0, abiertas: 0, resueltas: 0, valor_afectado: 0, valor_liberado: 0 },
+    PRODUCTO_INMOVILIZADO_PRECIO: { tipo: 'PRODUCTO_INMOVILIZADO_PRECIO', etiqueta: 'Productos Inmovilizados (Precio)', cantidad: 0, abiertas: 0, resueltas: 0, valor_afectado: 0, valor_liberado: 0 },
+    RETRASO_ENTREGA: { tipo: 'RETRASO_ENTREGA', etiqueta: 'Retrasos de Entrega', cantidad: 0, abiertas: 0, resueltas: 0, valor_afectado: 0, valor_liberado: 0 }
+  };
+
+  const ocsConIncidenciasSet = new Set();
+  const ocsPorTipo = {
+    ENTREGA_INCOMPLETA: new Set(),
+    PRODUCTO_INMOVILIZADO_PRECIO: new Set(),
+    RETRASO_ENTREGA: new Set()
   };
 
   let capInmovilizadoDetectado = 0;
@@ -133,6 +140,11 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
   const ocById = new Map(ordenesFiltradas.map(o => [o.id, o]));
 
   for (const inc of incidenciasFiltradas) {
+    ocsConIncidenciasSet.add(inc.orden_compra_id);
+    if (ocsPorTipo[inc.tipo_incidencia]) {
+      ocsPorTipo[inc.tipo_incidencia].add(inc.orden_compra_id);
+    }
+
     const val = Number(inc.valor_economico_afectado || 0);
     const lib = Number(inc.monto_liberado || 0);
 
@@ -222,7 +234,7 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
   const horasAhorradas = Number((ordenesFiltradas.length * horasPorOC).toFixed(1));
   const ahorroOperativoPen = Number((horasAhorradas * Number(cfg.costo_hora_operativa || 6.25)).toFixed(2));
 
-  // Proyección de despachos clientes basada en línea base de tesis (400/mes, 45 afectados antes del sistema)
+  // Proyección de continuidad de despachos a clientes
   const despachosBase = Number(cfg.despachos_mensuales_base || 400);
   const ocsConFallaActivaSinResolver = new Set(
     incidenciasFiltradas
@@ -263,8 +275,15 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
       abiertas: incidenciasAbiertas,
       en_gestion: incidenciasEnGestion,
       resueltas: incidenciasResueltas,
+      total_ocs_con_incidencias: ocsConIncidenciasSet.size,
+      desglose_ocs_afectadas: {
+        total_ocs_con_incidencias: ocsConIncidenciasSet.size,
+        por_faltantes: ocsPorTipo.ENTREGA_INCOMPLETA ? ocsPorTipo.ENTREGA_INCOMPLETA.size : 0,
+        por_retencion_precio: ocsPorTipo.PRODUCTO_INMOVILIZADO_PRECIO ? ocsPorTipo.PRODUCTO_INMOVILIZADO_PRECIO.size : 0,
+        por_retraso: ocsPorTipo.RETRASO_ENTREGA ? ocsPorTipo.RETRASO_ENTREGA.size : 0
+      },
       tasa_ocs_con_incidencia_pct: ordenesFiltradas.length > 0
-        ? Number((((ocsConIncidencias + ocsVencidasSinEntrega) / ordenesFiltradas.length) * 100).toFixed(2))
+        ? Number(((ocsConIncidenciasSet.size / ordenesFiltradas.length) * 100).toFixed(2))
         : 0
     },
     rentabilidad: {

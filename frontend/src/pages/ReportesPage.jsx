@@ -140,7 +140,7 @@ export default function ReportesPage() {
 
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>Lucro Cesante Recuperado</span>
+                <span>Margen Comercial Protegido</span>
                 <TrendingUp className="h-4 w-4 text-emerald-700" />
               </div>
               <div className="mt-2.5 text-2xl font-semibold text-slate-900 tabular-nums">
@@ -150,20 +150,20 @@ export default function ReportesPage() {
                 <div className="h-full rounded-full bg-emerald-600" style={{ width: `${pctMetaLucro}%` }} />
               </div>
               <p className="mt-1.5 text-[11px] text-slate-500 tabular-nums">
-                Meta: {formatearMoneda(metaLucro)} • En riesgo: {formatearMoneda(rent.lucro_cesante_en_riesgo_pen)}
+                Meta mensual: {formatearMoneda(metaLucro)} • En riesgo: {formatearMoneda(rent.lucro_cesante_en_riesgo_pen)}
               </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>Ratio Atención (Fill Rate)</span>
+                <span>Cumplimiento de Entregas (Órdenes)</span>
                 <CheckCircle2 className="h-4 w-4 text-slate-700" />
               </div>
               <div className="mt-2.5 text-2xl font-semibold text-slate-900 tabular-nums">
                 {Number(abast.fill_rate_ordenes_pct ?? 100).toFixed(1)}%
               </div>
               <p className="mt-3 text-[11px] text-slate-500 tabular-nums">
-                {rent.despachos_protegidos_vs_linea_base ?? 0} de 45 despachos críticos protegidos vs. línea base ({rent.despachos_mensuales_base || 400}/mes)
+                {abast.ocs_conformes || 0} conformes de {abast.ocs_recepcionadas || 0} recibidas ({rent.despachos_protegidos_vs_linea_base ?? 0} despachos protegidos)
               </p>
             </div>
 
@@ -176,7 +176,7 @@ export default function ReportesPage() {
                 {formatearMoneda(rent.ahorro_operativo_pen)}
               </div>
               <p className="mt-3 text-[11px] text-slate-500 tabular-nums">
-                {rent.horas_hombre_ahorradas || 0} horas-hombre automatizadas (elimina búsqueda manual en Excel)
+                {rent.horas_hombre_ahorradas || 0} horas operativas ahorradas mediante conciliación automatizada
               </p>
             </div>
           </div>

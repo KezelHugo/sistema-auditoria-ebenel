@@ -7,7 +7,8 @@ import {
   TrendingUp,
   ArrowUpRight,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Layers
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -71,6 +72,10 @@ export default function DashboardPage() {
   const recientes = data?.alertas_recientes || [];
 
   const activasTotal = (resInc.abiertas || 0) + (resInc.en_gestion || 0);
+  const desgloseOcs = resInc.desglose_ocs_afectadas || {};
+  const totalOcsConFallas = desgloseOcs.total_ocs_con_incidencias ?? ((resAbast.ocs_con_incidencias || 0) + (resAbast.ocs_vencidas_sin_entrega || 0));
+  const regularizadoPen = Number(((rent.capital_inmovilizado_liberado_pen || 0) + (rent.faltantes_valor_recuperado_pen || 0)).toFixed(2));
+  const pendientePen = Number(((rent.capital_inmovilizado_pendiente_pen || 0) + (rent.faltantes_valor_pendiente_pen || 0)).toFixed(2));
 
   return (
     <Layout statusExterno={data?.estado_erp || null} onSyncComplete={cargarDashboard}>
@@ -78,7 +83,7 @@ export default function DashboardPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-slate-500">
-            Monitoreo desacoplado de Órdenes de Compra e Ingresos a Almacén (sincronización cada 5 min).
+            Control y conciliación de Órdenes de Compra frente a Ingresos a Almacén.
           </p>
         </div>
 
@@ -117,54 +122,57 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* 4 KPI Cards Empresariales */}
+          {/* 4 Indicadores Logísticos y Operativos */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {/* Fill Rate */}
+            {/* Card 1: Órdenes con Incidencias */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Fill Rate de Órdenes</span>
-                <div className="rounded-lg bg-emerald-50 p-2 text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" />
-                </div>
-              </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {Number(resAbast.fill_rate_ordenes_pct ?? 100).toFixed(1)}%
-                </span>
-                <span className="text-xs text-slate-500 tabular-nums">
-                  ({Number(resAbast.fill_rate_unidades_pct ?? 100).toFixed(1)}% unid.)
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                {resAbast.ocs_conformes || 0} conformes de {resAbast.ocs_recepcionadas || 0} recepcionadas • {resAbast.total_ocs || 0} OCs totales
-              </p>
-            </div>
-
-            {/* Incidencias */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Incidencias por Atender</span>
-                <div className="rounded-lg bg-amber-50 p-2 text-amber-700">
+                <span className="text-xs font-medium text-slate-500">Órdenes con Incidencias</span>
+                <div className="rounded-lg bg-rose-50 p-2 text-rose-700">
                   <AlertTriangle className="h-4 w-4" />
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {activasTotal}
+                  {totalOcsConFallas}
                 </span>
-                <span className="text-xs text-slate-500 tabular-nums">
-                  activas ({resInc.resueltas || 0} resueltas)
+                <span className="text-xs font-medium text-rose-700 tabular-nums">
+                  ({Number(resInc.tasa_ocs_con_incidencia_pct || 0).toFixed(1)}% del total)
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                {Number(resInc.tasa_ocs_con_incidencia_pct || 0).toFixed(1)}% de OCs con anomalías • {resAbast.ocs_vencidas_sin_entrega || 0} vencidas
+                {resAbast.ocs_conformes || 0} conformes sin observaciones • {resAbast.total_ocs || 0} OCs totales
               </p>
             </div>
 
-            {/* Capital Inmovilizado */}
+            {/* Card 2: Órdenes Observadas por Causa */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Capital Inmovilizado</span>
+                <span className="text-xs font-medium text-slate-500">Órdenes Observadas por Causa</span>
+                <div className="rounded-lg bg-amber-50 p-2 text-amber-700">
+                  <Layers className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 tabular-nums">
+                  Faltas: {desgloseOcs.por_faltantes ?? (pareto.find(p => p.tipo === 'ENTREGA_INCOMPLETA')?.cantidad || 0)}
+                </span>
+                <span className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-800 tabular-nums">
+                  Retención: {desgloseOcs.por_retencion_precio ?? (pareto.find(p => p.tipo === 'PRODUCTO_INMOVILIZADO_PRECIO')?.cantidad || 0)}
+                </span>
+                <span className="inline-flex items-center rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-semibold text-orange-800 tabular-nums">
+                  Retraso: {desgloseOcs.por_retraso ?? (pareto.find(p => p.tipo === 'RETRASO_ENTREGA')?.cantidad || 0)}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                {resInc.total_incidencias || 0} anomalías registradas ({activasTotal} pendientes de resolución)
+              </p>
+            </div>
+
+            {/* Card 3: Mercadería Retenida en Almacén */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-500">Mercadería Retenida en Almacén</span>
                 <div className="rounded-lg bg-rose-50 p-2 text-rose-700">
                   <Wallet className="h-4 w-4" />
                 </div>
@@ -174,38 +182,41 @@ export default function DashboardPage() {
                   {formatearMoneda(rent.capital_inmovilizado_pendiente_pen)}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-emerald-700 font-medium tabular-nums">
+              <p className="mt-2 text-xs font-medium text-emerald-700 tabular-nums">
                 Liberado: {formatearMoneda(rent.capital_inmovilizado_liberado_pen)} ({Number(rent.tasa_liberacion_capital_pct || 0).toFixed(1)}%)
               </p>
             </div>
 
-            {/* Lucro Cesante & Ahorro */}
+            {/* Card 4: Monto Regularizado con Proveedores */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Lucro Cesante Recuperado</span>
+                <span className="text-xs font-medium text-slate-500">Monto Regularizado con Proveedores</span>
                 <div className="rounded-lg bg-teal-50 p-2 text-teal-700">
                   <TrendingUp className="h-4 w-4" />
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {formatearMoneda(rent.lucro_cesante_recuperado_pen)}
+                  {formatearMoneda(regularizadoPen)}
+                </span>
+                <span className="text-xs text-slate-500 tabular-nums">
+                  ({resInc.resueltas || 0} reclamos resueltos)
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                En riesgo: {formatearMoneda(rent.lucro_cesante_en_riesgo_pen)} • {rent.horas_hombre_ahorradas || 0}h ahorradas
+                Pendiente: {formatearMoneda(pendientePen)} • {rent.horas_hombre_ahorradas || 0}h ahorradas
               </p>
             </div>
           </div>
 
           {/* Gráficos principales */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Pareto */}
+            {/* Gráfico de Incidencias por Causa */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-7">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Clasificación Pareto de Incidencias</h2>
-                  <p className="text-xs text-slate-500">Frecuencia detectada vs. distribución histórica (48% / 40% / 12%)</p>
+                  <h2 className="text-sm font-semibold text-slate-900">Distribución de Incidencias por Causa Operativa</h2>
+                  <p className="text-xs text-slate-500">Frecuencia y proporción de anomalías detectadas en recepción física</p>
                 </div>
                 <Link
                   to="/incidencias"
@@ -240,7 +251,7 @@ export default function DashboardPage() {
                           fontSize: '12px'
                         }}
                         formatter={(value, _name, props) => [
-                          `${value} incidencia(s) (${props.payload.porcentaje}%)`,
+                          `${value} anomalía(s) (${props.payload.porcentaje}%)`,
                           'Detectadas'
                         ]}
                       />
@@ -258,10 +269,12 @@ export default function DashboardPage() {
                 {pareto.map(item => (
                   <div key={item.tipo} className="rounded-lg bg-slate-50 px-3 py-2">
                     <div className="text-[11px] font-medium text-slate-500">
-                      {TIPO_INCIDENCIA_META[item.tipo]?.corto || item.tipo} (Ref. {item.referencia_tesis_pct}%)
+                      {TIPO_INCIDENCIA_META[item.tipo]?.etiqueta || item.tipo}
                     </div>
                     <div className="mt-0.5 flex items-baseline justify-between">
-                      <span className="text-sm font-semibold text-slate-900 tabular-nums">{item.porcentaje}%</span>
+                      <span className="text-sm font-semibold text-slate-900 tabular-nums">
+                        {item.cantidad} ({item.porcentaje}%)
+                      </span>
                       <span className="text-[11px] text-slate-500 tabular-nums">{item.abiertas} activas</span>
                     </div>
                   </div>
@@ -313,13 +326,13 @@ export default function DashboardPage() {
 
               <div className="mt-4 rounded-lg border border-slate-200/80 bg-slate-50 p-3 text-xs text-slate-600">
                 <div className="flex items-center justify-between font-medium text-slate-800">
-                  <span>Despachos protegidos vs. línea base</span>
-                  <span className="text-teal-700 tabular-nums">
-                    {rent.despachos_protegidos_vs_linea_base ?? 0} / 45 mensuales
+                  <span>Continuidad de Despachos a Clientes</span>
+                  <span className="text-teal-700 font-semibold tabular-nums">
+                    {rent.despachos_protegidos_vs_linea_base ?? 0} despachos protegidos
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Mitigación sobre los {rent.despachos_mensuales_base || 400} despachos mensuales a clientes finales.
+                  Garantía de stock y disponibilidad inmediata para atención de pedidos a clientes sin quiebres de inventario.
                 </p>
               </div>
             </div>

@@ -131,7 +131,7 @@ export default function ConfiguracionPage() {
                 Conexión con API del ERP (Módulo 1)
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                Consumo desacoplado de solo lectura mediante REST API cada 5 minutos.
+                Conexión de solo lectura mediante API REST con sincronización automática cada 5 minutos.
               </p>
 
               <div className="mt-5 space-y-4">

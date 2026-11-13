@@ -87,7 +87,7 @@ export default function OrdenesPage() {
                   <th className="px-4 py-3">Laboratorio Proveedor</th>
                   <th className="px-4 py-3">Entrega Pactada / Guía</th>
                   <th className="px-4 py-3 text-right">Total OC</th>
-                  <th className="px-4 py-3 text-right">Fill Rate</th>
+                  <th className="px-4 py-3 text-right">% Recepción Conforme</th>
                   <th className="px-4 py-3">Resultado Conciliación</th>
                   <th className="px-4 py-3 text-right">Detalle</th>
                 </tr>

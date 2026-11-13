@@ -34,7 +34,7 @@ const TITULOS_RUTA = {
   '/': 'Panel Ejecutivo de Trazabilidad Logística',
   '/incidencias': 'Gestión de Incidencias Logísticas',
   '/ordenes-compra': 'Órdenes de Compra e Ingresos Conciliados',
-  '/reportes': 'Control de Rentabilidad, Fill Rate y Exportación',
+  '/reportes': 'Reportes de Rentabilidad y Cumplimiento Logístico',
   '/admin/trabajadores': 'Administración de Trabajadores y Accesos',
   '/admin/auditoria': 'Registro de Auditoría e Inmutabilidad del Sistema',
   '/admin/configuracion': 'Configuración del Motor ERP y Tolerancias'

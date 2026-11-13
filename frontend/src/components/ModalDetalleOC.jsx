@@ -101,7 +101,7 @@ export default function ModalDetalleOC({ ordenId, onClose, onGestionarIncidencia
                   </div>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-[11px] text-slate-500">Fill Rate (Unidades)</div>
+                  <div className="text-[11px] text-slate-500">Recepción Conforme</div>
                   <div className="mt-1 text-sm font-semibold text-slate-900 tabular-nums">
                     {conc?.fill_rate_unidades_pct !== null && conc?.fill_rate_unidades_pct !== undefined
                       ? `${Number(conc.fill_rate_unidades_pct).toFixed(1)}%`

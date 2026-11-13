@@ -49,10 +49,10 @@ export default function IncidenciasPage() {
   }, [cargar]);
 
   const TABS = [
-    { id: 'TODAS', label: 'Todas las alertas', count: resumen.total ?? 0 },
-    { id: 'ENTREGA_INCOMPLETA', label: 'Entregas Incompletas (48%)', count: resumen.ENTREGA_INCOMPLETA ?? 0 },
-    { id: 'PRODUCTO_INMOVILIZADO_PRECIO', label: 'Inmovilizados Precio (40%)', count: resumen.PRODUCTO_INMOVILIZADO_PRECIO ?? 0 },
-    { id: 'RETRASO_ENTREGA', label: 'Retrasos (12%)', count: resumen.RETRASO_ENTREGA ?? 0 }
+    { id: 'TODAS', label: 'Todas las incidencias', count: resumen.total ?? 0 },
+    { id: 'ENTREGA_INCOMPLETA', label: 'Entregas Incompletas', count: resumen.ENTREGA_INCOMPLETA ?? 0 },
+    { id: 'PRODUCTO_INMOVILIZADO_PRECIO', label: 'Retención por Precio', count: resumen.PRODUCTO_INMOVILIZADO_PRECIO ?? 0 },
+    { id: 'RETRASO_ENTREGA', label: 'Retrasos de Entrega', count: resumen.RETRASO_ENTREGA ?? 0 }
   ];
 
   return (
