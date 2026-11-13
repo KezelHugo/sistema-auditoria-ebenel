@@ -28,6 +28,7 @@ import ModalGestionIncidencia from '../components/ModalGestionIncidencia';
 import {
   formatearMoneda,
   formatearFechaCortaLima,
+  obtenerEstadoCompromiso,
   TIPO_INCIDENCIA_META,
   ESTADO_GESTION_META
 } from '../utils/formatters';
@@ -486,6 +487,9 @@ export default function DashboardPage() {
                       {alertasPaginadas.map(inc => {
                         const tMeta = TIPO_INCIDENCIA_META[inc.tipo_incidencia] || {};
                         const eMeta = ESTADO_GESTION_META[inc.estado_gestion] || {};
+                        const compromiso = inc.fecha_compromiso_entrega
+                          ? obtenerEstadoCompromiso(inc.fecha_compromiso_entrega)
+                          : null;
                         return (
                           <tr key={inc.id} className="hover:bg-slate-50/70">
                             <td className="px-5 py-3">
@@ -505,10 +509,23 @@ export default function DashboardPage() {
                               <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${tMeta.badge}`}>
                                 {tMeta.corto || inc.tipo_incidencia}
                               </span>
+                              {compromiso && (
+                                <div className="mt-1">
+                                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${compromiso.badge}`}>
+                                    <Clock className="h-2.5 w-2.5 shrink-0" />
+                                    {compromiso.texto}
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="max-w-xs px-5 py-3">
                               <div className="truncate font-medium text-slate-900">{inc.nombre_producto}</div>
                               <div className="truncate text-[11px] text-slate-500">{inc.laboratorio_nombre}</div>
+                              {Number(inc.cantidad_regularizada || 0) > 0 && Number(inc.cantidad_afectada || 0) > 0 && (
+                                <div className="mt-1 text-[10px] font-medium text-teal-700">
+                                  Entregado: {inc.cantidad_regularizada}/{inc.cantidad_afectada} unid.
+                                </div>
+                              )}
                             </td>
                             <td className="px-5 py-3 text-right font-semibold text-slate-900 tabular-nums">
                               {formatearMoneda(inc.valor_economico_afectado)}

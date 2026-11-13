@@ -309,11 +309,52 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
   assert.equal(patchInc.data.data.estado_gestion, 'RESUELTA_CAPITAL_LIBERADO');
   assert.equal(Number(patchInc.data.data.monto_liberado), 1200);
 
-  // Rentabilidad refleja capital liberado + lucro cesante recuperado (20% de 1200 = 240)
+  // 6.b EMPLEADO gestiona faltantes por partes con recordatorio variable y cálculo automático
+  const faltanteList = await apiFetch(apiUrl, '/api/incidencias?tipo=ENTREGA_INCOMPLETA', { token: tokenEmp });
+  assert.equal(faltanteList.status, 200);
+  assert.equal(faltanteList.data.data.length, 1);
+  const faltanteId = faltanteList.data.data[0].id;
+
+  const patchFaltanteParcial = await apiFetch(apiUrl, `/api/incidencias/${faltanteId}`, {
+    method: 'PATCH',
+    token: tokenEmp,
+    body: {
+      estado_gestion: 'EN_GESTION',
+      cantidad_regularizada: 20,
+      fecha_compromiso_entrega: '2026-11-25',
+      recordatorio_nota: 'Laboratorio despacha lote 1 de 20 unid. por courier.',
+      documento_respaldo: 'GR-PARCIAL-01',
+      observaciones_gestion: 'Entrega por lotes acordada con compras.'
+    }
+  });
+  assert.equal(patchFaltanteParcial.status, 200);
+  assert.equal(patchFaltanteParcial.data.data.cantidad_regularizada, 20);
+  // 20 unid * S/ 5 = S/ 100
+  assert.equal(Number(patchFaltanteParcial.data.data.monto_liberado), 100);
+  assert.equal(patchFaltanteParcial.data.data.recordatorio_nota, 'Laboratorio despacha lote 1 de 20 unid. por courier.');
+  assert.ok(patchFaltanteParcial.data.data.fecha_compromiso_entrega);
+
+  // Regularizar lote restante (50 de 50) y resolver
+  const patchFaltanteTotal = await apiFetch(apiUrl, `/api/incidencias/${faltanteId}`, {
+    method: 'PATCH',
+    token: tokenEmp,
+    body: {
+      estado_gestion: 'RESUELTA_CAPITAL_LIBERADO',
+      cantidad_regularizada: 50,
+      documento_respaldo: 'GR-FINAL-02'
+    }
+  });
+  assert.equal(patchFaltanteTotal.status, 200);
+  assert.equal(patchFaltanteTotal.data.data.cantidad_regularizada, 50);
+  assert.equal(Number(patchFaltanteTotal.data.data.monto_liberado), 250); // 50 * 5 = 250
+  assert.equal(patchFaltanteTotal.data.data.estado_gestion, 'RESUELTA_CAPITAL_LIBERADO');
+
+  // Rentabilidad refleja capital inmovilizado liberado (1200) + faltante recuperado (250) + lucro cesante recuperado (20% de 1450 = 290)
   const repRes = await apiFetch(apiUrl, '/api/reportes/rentabilidad', { token: tokenEmp });
   assert.equal(repRes.status, 200);
   assert.equal(repRes.data.rentabilidad.capital_inmovilizado_liberado_pen, 1200);
-  assert.equal(repRes.data.rentabilidad.lucro_cesante_recuperado_pen, 240);
+  assert.equal(repRes.data.rentabilidad.faltantes_valor_recuperado_pen, 250);
+  assert.equal(repRes.data.rentabilidad.lucro_cesante_recuperado_pen, 290);
 
   // CSV con UTF-8 BOM
   const csvRes = await apiFetch(apiUrl, '/api/reportes/export-csv', { token: tokenEmp });

@@ -110,3 +110,39 @@ export const SEVERIDAD_BADGE = {
   MEDIA: 'bg-amber-50 text-amber-700 border-amber-200',
   BAJA: 'bg-slate-100 text-slate-700 border-slate-200'
 };
+
+export function obtenerEstadoCompromiso(fechaIso) {
+  if (!fechaIso) return null;
+  const d = new Date(fechaIso);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const hoy = new Date();
+  const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const fechaObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDias = Math.round((fechaObj.getTime() - fechaHoy.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDias < 0) {
+    const diasVencidos = Math.abs(diffDias);
+    return {
+      estado: 'VENCIDO',
+      texto: `Compromiso vencido hace ${diasVencidos} d`,
+      dias: diffDias,
+      badge: 'bg-rose-100 text-rose-800 border-rose-300 font-medium'
+    };
+  } else if (diffDias === 0) {
+    return {
+      estado: 'HOY',
+      texto: 'Compromiso vence hoy',
+      dias: 0,
+      badge: 'bg-amber-100 text-amber-800 border-amber-300 font-semibold animate-pulse'
+    };
+  } else {
+    return {
+      estado: 'PENDIENTE',
+      texto: `Entrega pactada para ${formatearFechaCortaLima(fechaIso)} (en ${diffDias} d)`,
+      dias: diffDias,
+      badge: 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
+    };
+  }
+}
+

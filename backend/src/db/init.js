@@ -23,6 +23,17 @@ async function inicializarBaseDatos() {
     await db.query(stmt);
   }
 
+  // Migraciones automáticas idempotentes para bases de datos existentes
+  try {
+    await db.query(`
+      ALTER TABLE incidencias_logisticas ADD COLUMN IF NOT EXISTS cantidad_regularizada INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE incidencias_logisticas ADD COLUMN IF NOT EXISTS fecha_compromiso_entrega TIMESTAMP;
+      ALTER TABLE incidencias_logisticas ADD COLUMN IF NOT EXISTS recordatorio_nota TEXT;
+    `);
+  } catch (_e) {
+    // Si la tabla ya contiene las columnas o el driver no soporta ALTER TABLE IF NOT EXISTS
+  }
+
   // Asegurar configuración única id = 1
   const { rows: cfgRows } = await db.query('SELECT id FROM configuracion_sistema WHERE id = 1');
   if (cfgRows.length === 0) {

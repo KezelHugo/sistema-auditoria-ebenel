@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { X, AlertCircle, PackageCheck } from 'lucide-react';
+import { X, AlertCircle, PackageCheck, Clock } from 'lucide-react';
 import { api } from '../api/client';
 import {
   formatearMoneda,
   formatearFechaLima,
   formatearFechaCortaLima,
+  obtenerEstadoCompromiso,
   ESTADO_CONCILIACION_META,
   TIPO_INCIDENCIA_META,
   ESTADO_GESTION_META
@@ -121,6 +122,9 @@ export default function ModalDetalleOC({ ordenId, onClose, onGestionarIncidencia
                     {detalle.incidencias.map(inc => {
                       const tMeta = TIPO_INCIDENCIA_META[inc.tipo_incidencia] || {};
                       const eMeta = ESTADO_GESTION_META[inc.estado_gestion] || {};
+                      const compromiso = inc.fecha_compromiso_entrega
+                        ? obtenerEstadoCompromiso(inc.fecha_compromiso_entrega)
+                        : null;
                       return (
                         <div
                           key={inc.id}
@@ -140,6 +144,27 @@ export default function ModalDetalleOC({ ordenId, onClose, onGestionarIncidencia
                               </span>
                             </div>
                             <p className="mt-1 text-xs text-slate-600">{inc.observaciones_automaticas}</p>
+
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px]">
+                              {Number(inc.cantidad_regularizada || 0) > 0 && Number(inc.cantidad_afectada || 0) > 0 && (
+                                <span className="rounded border border-teal-200 bg-teal-50 px-2 py-0.5 font-medium text-teal-800">
+                                  Regularizado: {inc.cantidad_regularizada}/{inc.cantidad_afectada} unid.
+                                </span>
+                              )}
+                              {compromiso && (
+                                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${compromiso.badge}`}>
+                                  <Clock className="h-3 w-3 shrink-0" />
+                                  {compromiso.texto}
+                                </span>
+                              )}
+                            </div>
+
+                            {inc.recordatorio_nota && (
+                              <p className="mt-1 text-[11px] italic text-slate-500">
+                                Acorde de entrega: "{inc.recordatorio_nota}"
+                              </p>
+                            )}
+
                             {inc.documento_respaldo && (
                               <p className="mt-1 text-[11px] font-medium text-teal-700">
                                 Respaldo: {inc.documento_respaldo} • Liberado: {formatearMoneda(inc.monto_liberado)}

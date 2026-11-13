@@ -87,7 +87,25 @@ router.patch('/:id', autenticarJWT, async (req, res, next) => {
       });
     }
 
-    const montoRaw = req.body?.monto_liberado !== undefined ? Number(req.body.monto_liberado) : Number(actual.monto_liberado || 0);
+    let cantidadRegularizada = req.body?.cantidad_regularizada !== undefined
+      ? Math.max(0, parseInt(req.body.cantidad_regularizada, 10) || 0)
+      : Number(actual.cantidad_regularizada || 0);
+
+    let montoRaw = req.body?.monto_liberado !== undefined
+      ? Number(req.body.monto_liberado)
+      : Number(actual.monto_liberado || 0);
+
+    // Si no se proporcionó monto_liberado explícito, calcularlo automáticamente a partir de las unidades regularizadas
+    if (req.body?.monto_liberado === undefined && req.body?.cantidad_regularizada !== undefined) {
+      if (actual.tipo_incidencia === 'ENTREGA_INCOMPLETA') {
+        const precioUnit = Number(actual.precio_pactado || 0);
+        montoRaw = Number((cantidadRegularizada * precioUnit).toFixed(2));
+      } else if (actual.tipo_incidencia === 'PRODUCTO_INMOVILIZADO_PRECIO') {
+        const precioUnit = Number(actual.precio_facturado || actual.precio_pactado || 0);
+        montoRaw = Number((cantidadRegularizada * precioUnit).toFixed(2));
+      }
+    }
+
     if (Number.isNaN(montoRaw) || montoRaw < 0) {
       return res.status(400).json({ error: 'El monto liberado debe ser un número mayor o igual a cero.' });
     }
@@ -99,13 +117,32 @@ router.patch('/:id', autenticarJWT, async (req, res, next) => {
       ? String(req.body.observaciones_gestion || '').trim()
       : actual.observaciones_gestion;
 
+    // Manejo de fecha de compromiso de entrega y recordatorio variable
+    let fechaCompromiso = actual.fecha_compromiso_entrega;
+    if (req.body?.fecha_compromiso_entrega !== undefined) {
+      if (req.body.fecha_compromiso_entrega === null || req.body.fecha_compromiso_entrega === '') {
+        fechaCompromiso = null;
+      } else {
+        const d = new Date(req.body.fecha_compromiso_entrega);
+        if (!Number.isNaN(d.getTime())) {
+          fechaCompromiso = d;
+        }
+      }
+    }
+
+    const recordatorioNota = req.body?.recordatorio_nota !== undefined
+      ? String(req.body.recordatorio_nota || '').trim()
+      : actual.recordatorio_nota;
+
     const esResuelta = estadoNuevo === 'RESUELTA_CAPITAL_LIBERADO' || estadoNuevo === 'CERRADA_SIN_RECUPERACION';
     const resueltaEn = esResuelta ? (actual.resuelta_en || new Date()) : null;
 
     if (estadoNuevo === 'RESUELTA_CAPITAL_LIBERADO' && actual.tipo_incidencia === 'PRODUCTO_INMOVILIZADO_PRECIO' && montoRaw <= 0) {
-      return res.status(400).json({
-        error: 'Para liberar un producto inmovilizado por sobreprecio debes indicar el monto liberado (> S/ 0.00).'
-      });
+      if (cantidadRegularizada > 0) {
+        montoRaw = Number((cantidadRegularizada * Number(actual.precio_facturado || actual.precio_pactado || 0)).toFixed(2));
+      } else {
+        montoRaw = Number(actual.valor_economico_afectado || 0);
+      }
     }
 
     const { rows: updatedRows } = await db.query(
@@ -117,6 +154,9 @@ router.patch('/:id', autenticarJWT, async (req, res, next) => {
            gestionado_por = $6,
            gestionado_por_nombre = $7,
            resuelta_en = $8,
+           cantidad_regularizada = $9,
+           fecha_compromiso_entrega = $10,
+           recordatorio_nota = $11,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING *`,
@@ -128,7 +168,10 @@ router.patch('/:id', autenticarJWT, async (req, res, next) => {
         observacionesGestion || null,
         req.usuario.id,
         req.usuario.nombre_completo,
-        resueltaEn
+        resueltaEn,
+        cantidadRegularizada,
+        fechaCompromiso,
+        recordatorioNota || null
       ]
     );
     const actualizada = updatedRows[0];

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal, Eye } from 'lucide-react';
+import { Search, SlidersHorizontal, Eye, Clock } from 'lucide-react';
 import { api } from '../api/client';
 import Layout from '../components/Layout';
 import ModalDetalleOC from '../components/ModalDetalleOC';
@@ -8,6 +8,7 @@ import ModalGestionIncidencia from '../components/ModalGestionIncidencia';
 import {
   formatearMoneda,
   formatearFechaCortaLima,
+  obtenerEstadoCompromiso,
   TIPO_INCIDENCIA_META,
   ESTADO_GESTION_META,
   SEVERIDAD_BADGE
@@ -196,6 +197,9 @@ export default function IncidenciasPage() {
                   const tMeta = TIPO_INCIDENCIA_META[inc.tipo_incidencia] || {};
                   const eMeta = ESTADO_GESTION_META[inc.estado_gestion] || {};
                   const sevBadge = SEVERIDAD_BADGE[inc.severidad] || SEVERIDAD_BADGE.MEDIA;
+                  const compromiso = inc.fecha_compromiso_entrega
+                    ? obtenerEstadoCompromiso(inc.fecha_compromiso_entrega)
+                    : null;
                   return (
                     <tr key={inc.id} className="hover:bg-slate-50/70">
                       <td className="px-4 py-3.5 align-top">
@@ -217,6 +221,14 @@ export default function IncidenciasPage() {
                             Sev. {inc.severidad}
                           </span>
                         </div>
+                        {compromiso && (
+                          <div className="mt-1.5">
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${compromiso.badge}`}>
+                              <Clock className="h-3 w-3 shrink-0" />
+                              {compromiso.texto}
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       <td className="max-w-md px-4 py-3.5 align-top">
@@ -225,6 +237,22 @@ export default function IncidenciasPage() {
                           {inc.nombre_producto}
                         </div>
                         <p className="mt-1 leading-relaxed text-[11px] text-slate-600">{inc.observaciones_automaticas}</p>
+                        {Number(inc.cantidad_regularizada || 0) > 0 && Number(inc.cantidad_afectada || 0) > 0 && (
+                          <div className="mt-1.5 inline-flex items-center gap-1 rounded border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-800">
+                            <span>Regularizado:</span>
+                            <span>{inc.cantidad_regularizada} de {inc.cantidad_afectada} unid.</span>
+                            {Number(inc.cantidad_afectada) - Number(inc.cantidad_regularizada) > 0 && (
+                              <span className="font-normal text-amber-700">
+                                (faltan {Number(inc.cantidad_afectada) - Number(inc.cantidad_regularizada)})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {inc.recordatorio_nota && (
+                          <p className="mt-1 text-[11px] italic text-slate-600">
+                            Compromiso: "{inc.recordatorio_nota}"
+                          </p>
+                        )}
                         {inc.observaciones_gestion && (
                           <p className="mt-1 rounded bg-slate-50 px-2 py-1 text-[11px] text-slate-600">
                             Seguimiento: {inc.observaciones_gestion}
