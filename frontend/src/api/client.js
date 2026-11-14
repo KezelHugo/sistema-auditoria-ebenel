@@ -129,39 +129,5 @@ export const api = {
   get: (path, opts) => request(path, { ...opts, method: 'GET' }),
   post: (path, body, opts) => request(path, { ...opts, method: 'POST', body }),
   put: (path, body, opts) => request(path, { ...opts, method: 'PUT', body }),
-  patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
-
-  async downloadCsv(path, filename) {
-    const token = getStoredToken();
-    if (token && isTokenExpired(token)) {
-      manejarSesionExpirada('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-      throw new Error('Sesión expirada.');
-    }
-
-    let res;
-    try {
-      res = await fetch(`${API_BASE}${path}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-    } catch (netErr) {
-      throw new Error('No se pudo conectar con el servidor para descargar el reporte CSV.');
-    }
-
-    if (res.status === 401) {
-      manejarSesionExpirada('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-      throw new Error('Sesión expirada.');
-    }
-    if (!res.ok) {
-      throw new Error('No se pudo descargar el reporte CSV.');
-    }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
+  patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body })
 };

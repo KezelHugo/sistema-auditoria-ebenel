@@ -390,11 +390,6 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
   assert.equal(patchLabRes.status, 200);
   assert.equal(patchLabRes.data.data.plazo_entrega_dias, 5);
 
-  // CSV con UTF-8 BOM
-  const csvRes = await apiFetch(apiUrl, '/api/reportes/export-csv', { token: tokenEmp });
-  assert.equal(csvRes.status, 200);
-  assert.ok(csvRes.data.includes('NC-F001-00421'));
-
   // 7. GERENCIA gestiona trabajadores, revoca acceso en vivo y consulta auditoría
   const crearTrab = await apiFetch(apiUrl, '/api/admin/usuarios', {
     method: 'POST',
@@ -456,7 +451,6 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
   assert.ok(acciones.includes('LIBERAR_CAPITAL_INCIDENCIA'));
   assert.ok(acciones.includes('CREAR_TRABAJADOR'));
   assert.ok(acciones.includes('REVOCAR_ACCESO_TRABAJADOR'));
-  assert.ok(acciones.includes('EXPORTAR_REPORTE_CSV'));
 
   // 8. Resiliencia si ERP se cae (OFFLINE)
   await new Promise(resolve => erpServer.close(resolve));

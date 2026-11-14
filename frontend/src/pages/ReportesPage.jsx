@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Download, Printer, Wallet, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Printer, Wallet, CheckCircle2, HelpCircle } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -20,7 +20,6 @@ export default function ReportesPage() {
   const [paginaTabla, setPaginaTabla] = useState(1);
   const [data, setData] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [exportando, setExportando] = useState(false);
   const [error, setError] = useState('');
 
   const ITEMS_POR_PAGINA = 10;
@@ -54,20 +53,6 @@ export default function ReportesPage() {
   useEffect(() => {
     setPaginaTabla(1);
   }, [periodo]);
-
-  async function descargarCsv() {
-    setExportando(true);
-    try {
-      await api.downloadCsv(
-        `/api/reportes/export-csv?periodo=${periodo}`,
-        `reporte_auditoria_ebenel_${periodo}.csv`
-      );
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setExportando(false);
-    }
-  }
 
   const rent = data?.rentabilidad || {};
   const abast = data?.resumen_abastecimiento || {};
@@ -114,15 +99,6 @@ export default function ReportesPage() {
           >
             <Printer className="h-4 w-4" />
             <span>Imprimir / PDF</span>
-          </button>
-          <button
-            type="button"
-            onClick={descargarCsv}
-            disabled={exportando}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-3.5 py-2 text-xs font-medium text-white shadow-sm hover:bg-teal-800 disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" />
-            <span>{exportando ? 'Exportando...' : 'Exportar CSV'}</span>
           </button>
         </div>
       </div>
