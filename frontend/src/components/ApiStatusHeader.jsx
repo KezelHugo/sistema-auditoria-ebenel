@@ -7,7 +7,6 @@ import { formatearFechaLima, formatearTiempoRelativo } from '../utils/formatters
 export default function ApiStatusHeader({ titulo, onOpenMobileMenu, onSyncComplete, statusExterno = null }) {
   const { esGerencia } = useAuth();
   const [status, setStatus] = useState(statusExterno);
-  const [verificando, setVerificando] = useState(false);
   const [sincronizando, setSincronizando] = useState(false);
   const [mensajeToast, setMensajeToast] = useState('');
   const [, setTick] = useState(0);
@@ -19,14 +18,11 @@ export default function ApiStatusHeader({ titulo, onOpenMobileMenu, onSyncComple
   }, [statusExterno]);
 
   const consultarEstado = useCallback(async (forzarCheck = true) => {
-    setVerificando(true);
     try {
       const data = await api.get(`/api/status${forzarCheck ? '?check=1' : ''}`);
       setStatus(data);
     } catch (_) {
       // Mantiene el último estado conocido si falla temporalmente
-    } finally {
-      setVerificando(false);
     }
   }, []);
 
@@ -55,6 +51,7 @@ export default function ApiStatusHeader({ titulo, onOpenMobileMenu, onSyncComple
       }
     } catch (err) {
       setMensajeToast(err.message);
+      await consultarEstado(false);
     } finally {
       setSincronizando(false);
       setTimeout(() => setMensajeToast(''), 5000);
@@ -62,9 +59,6 @@ export default function ApiStatusHeader({ titulo, onOpenMobileMenu, onSyncComple
   }
 
   const conectado = Boolean(status?.erp_conectado);
-  const modo = status?.erp_modo_simulacion && status.erp_modo_simulacion !== 'DESCONOCIDO'
-    ? status.erp_modo_simulacion.replace('_', ' ')
-    : null;
 
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
@@ -108,11 +102,6 @@ export default function ApiStatusHeader({ titulo, onOpenMobileMenu, onSyncComple
             </span>
             <Database className="h-3.5 w-3.5 opacity-75" />
             <span>API ERP: {conectado ? 'ONLINE' : 'OFFLINE'}</span>
-            {conectado && modo && (
-              <span className="hidden rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 sm:inline">
-                {modo}
-              </span>
-            )}
           </div>
 
           {/* Indicador de última actualización (cada 5 min automático) */}
@@ -128,16 +117,6 @@ export default function ApiStatusHeader({ titulo, onOpenMobileMenu, onSyncComple
               </span>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={() => consultarEstado(true)}
-            disabled={verificando}
-            title="Verificar conexión con API del ERP"
-            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${verificando ? 'animate-spin text-teal-700' : ''}`} />
-          </button>
 
           {esGerencia && (
             <button
