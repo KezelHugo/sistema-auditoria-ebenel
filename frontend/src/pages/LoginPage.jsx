@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Activity, Lock, Mail, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -11,6 +11,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+  const [mensajeExpiracion, setMensajeExpiracion] = useState('');
+
+  useEffect(() => {
+    const motivo = sessionStorage.getItem('ebenel_session_expired');
+    if (motivo) {
+      setMensajeExpiracion(motivo);
+      sessionStorage.removeItem('ebenel_session_expired');
+    }
+  }, []);
 
   async function manejarSubmit(e) {
     e.preventDefault();
@@ -52,6 +61,13 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={manejarSubmit} className="mt-6 space-y-4">
+            {mensajeExpiracion && (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-800 flex items-start gap-2 shadow-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                <span>{mensajeExpiracion}</span>
+              </div>
+            )}
+
             {error && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700">
                 {error}
