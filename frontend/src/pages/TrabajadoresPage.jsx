@@ -3,6 +3,7 @@ import { UserPlus, Edit3, ShieldBan, ShieldCheck, X } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
+import Paginacion from '../components/Paginacion';
 import { formatearFechaLima } from '../utils/formatters';
 
 function ModalTrabajador({ trabajador, onClose, onSaved }) {
@@ -136,11 +137,14 @@ function ModalTrabajador({ trabajador, onClose, onSaved }) {
 export default function TrabajadoresPage() {
   const { usuario: usuarioActual } = useAuth();
   const [lista, setLista] = useState([]);
+  const [pagina, setPagina] = useState(1);
   const [resumen, setResumen] = useState({});
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+
+  const ITEMS_POR_PAGINA = 10;
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -171,6 +175,12 @@ export default function TrabajadoresPage() {
       setError(err.message);
     }
   }
+
+  // Paginación de 10 trabajadores por página
+  const totalPaginas = Math.max(1, Math.ceil(lista.length / ITEMS_POR_PAGINA));
+  const paginaValida = Math.min(Math.max(1, pagina), totalPaginas);
+  const inicio = (paginaValida - 1) * ITEMS_POR_PAGINA;
+  const listaPaginada = lista.slice(inicio, inicio + ITEMS_POR_PAGINA);
 
   return (
     <Layout>
@@ -208,8 +218,9 @@ export default function TrabajadoresPage() {
         {cargando ? (
           <div className="p-10 text-center text-sm text-slate-500">Cargando personal registrado...</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Trabajador</th>
@@ -221,82 +232,99 @@ export default function TrabajadoresPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/70">
-                {lista.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50/70">
-                    <td className="px-5 py-3.5">
-                      <div className="font-semibold text-slate-900">{u.nombre_completo}</div>
-                      <div className="text-[11px] text-slate-500">{u.email}</div>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-700">{u.cargo}</td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
-                          u.rol === 'GERENCIA'
-                            ? 'border-teal-200 bg-teal-50 text-teal-800'
-                            : 'border-slate-200 bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        {u.rol}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
-                          u.activo
-                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                            : 'border-rose-200 bg-rose-50 text-rose-700'
-                        }`}
-                      >
-                        {u.activo ? 'Activo' : 'Acceso Revocado'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 tabular-nums">
-                      {formatearFechaLima(u.ultimo_acceso)}
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditTarget(u);
-                            setModalOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                          <span>Editar</span>
-                        </button>
-
-                        {u.id !== usuarioActual?.id && (
-                          <button
-                            type="button"
-                            onClick={() => cambiarAcceso(u)}
-                            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium ${
-                              u.activo
-                                ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                            }`}
-                          >
-                            {u.activo ? (
-                              <>
-                                <ShieldBan className="h-3.5 w-3.5" />
-                                <span>Quitar acceso</span>
-                              </>
-                            ) : (
-                              <>
-                                <ShieldCheck className="h-3.5 w-3.5" />
-                                <span>Restaurar</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
+                {lista.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-slate-400">
+                      No hay trabajadores registrados.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  listaPaginada.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50/70">
+                      <td className="px-5 py-3.5">
+                        <div className="font-semibold text-slate-900">{u.nombre_completo}</div>
+                        <div className="text-[11px] text-slate-500">{u.email}</div>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-700">{u.cargo}</td>
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+                            u.rol === 'GERENCIA'
+                              ? 'border-teal-200 bg-teal-50 text-teal-800'
+                              : 'border-slate-200 bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          {u.rol}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+                            u.activo
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                              : 'border-rose-200 bg-rose-50 text-rose-700'
+                          }`}
+                        >
+                          {u.activo ? 'Activo' : 'Acceso Revocado'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500 tabular-nums">
+                        {formatearFechaLima(u.ultimo_acceso)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditTarget(u);
+                              setModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                            <span>Editar</span>
+                          </button>
+
+                          {u.id !== usuarioActual?.id && (
+                            <button
+                              type="button"
+                              onClick={() => cambiarAcceso(u)}
+                              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium ${
+                                u.activo
+                                  ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                  : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                              }`}
+                            >
+                              {u.activo ? (
+                                <>
+                                  <ShieldBan className="h-3.5 w-3.5" />
+                                  <span>Quitar acceso</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldCheck className="h-3.5 w-3.5" />
+                                  <span>Restaurar</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
+
+            <Paginacion
+              paginaActual={paginaValida}
+              totalRegistros={lista.length}
+              porPagina={ITEMS_POR_PAGINA}
+              alCambiarPagina={setPagina}
+              nombreEntidad="trabajadores"
+            />
+          </>
         )}
       </div>
 
