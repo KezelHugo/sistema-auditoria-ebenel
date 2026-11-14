@@ -2,10 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Search, ShieldCheck, X } from 'lucide-react';
 import { api } from '../api/client';
 import Layout from '../components/Layout';
+import Paginacion from '../components/Paginacion';
 import { formatearFechaLima } from '../utils/formatters';
 
 export default function AuditoriaPage() {
   const [eventos, setEventos] = useState([]);
+  const [totalRegistros, setTotalRegistros] = useState(0);
+  const [pagina, setPagina] = useState(1);
   const [accionesDisponibles, setAccionesDisponibles] = useState([]);
   const [accion, setAccion] = useState('TODAS');
   const [rol, setRol] = useState('TODOS');
@@ -14,6 +17,8 @@ export default function AuditoriaPage() {
   const [error, setError] = useState('');
   const [detalleModal, setDetalleModal] = useState(null);
 
+  const ITEMS_POR_PAGINA = 200;
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError('');
@@ -21,17 +26,23 @@ export default function AuditoriaPage() {
       const qs = new URLSearchParams({
         accion,
         rol,
-        limit: '150'
+        limit: String(ITEMS_POR_PAGINA),
+        offset: String((pagina - 1) * ITEMS_POR_PAGINA)
       });
       if (busqueda.trim()) qs.set('q', busqueda.trim());
       const res = await api.get(`/api/admin/auditoria?${qs.toString()}`);
       setEventos(res.data || []);
+      setTotalRegistros(res.total || 0);
       setAccionesDisponibles(res.acciones_disponibles || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setCargando(false);
     }
+  }, [accion, rol, busqueda, pagina]);
+
+  useEffect(() => {
+    setPagina(1);
   }, [accion, rol, busqueda]);
 
   useEffect(() => {
@@ -90,8 +101,9 @@ export default function AuditoriaPage() {
             No se encontraron eventos de auditoría con los filtros seleccionados.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Fecha y Hora</th>
@@ -138,8 +150,17 @@ export default function AuditoriaPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+
+          <Paginacion
+            paginaActual={pagina}
+            totalRegistros={totalRegistros}
+            porPagina={ITEMS_POR_PAGINA}
+            alCambiarPagina={setPagina}
+            nombreEntidad="eventos de auditoría"
+          />
+        </>
+      )}
+    </div>
 
       {detalleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[1px]">

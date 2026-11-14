@@ -484,7 +484,7 @@ router.post('/test-erp', async (req, res) => {
 router.get('/auditoria', async (req, res, next) => {
   try {
     const { accion, rol, entidad, q, desde, hasta } = req.query;
-    const limit = Math.min(Math.max(Number(req.query.limit) || 80, 1), 300);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 200, 1), 500);
     const offset = Math.max(Number(req.query.offset) || 0, 0);
 
     const { rows } = await db.query(
