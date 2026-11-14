@@ -10,7 +10,7 @@ module.exports = {
   erpApiKey: (process.env.ERP_API_KEY || '').trim(),
   corsOrigin: (process.env.CORS_ORIGIN || '*').trim(),
   seedGerenciaEmail: (process.env.SEED_GERENCIA_EMAIL || 'gerencia@ebenel.com.pe').trim().toLowerCase(),
-  seedGerenciaPassword: process.env.SEED_GERENCIA_PASSWORD || 'Ebenel2026!',
+  seedGerenciaPassword: process.env.SEED_GERENCIA_PASSWORD || 'admin123',
   seedEmpleadoEmail: (process.env.SEED_EMPLEADO_EMAIL || 'logistica@ebenel.com.pe').trim().toLowerCase(),
-  seedEmpleadoPassword: process.env.SEED_EMPLEADO_PASSWORD || 'Ebenel2026!'
+  seedEmpleadoPassword: process.env.SEED_EMPLEADO_PASSWORD || 'logistica123'
 };

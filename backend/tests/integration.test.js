@@ -254,7 +254,7 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
   // 3. Login Gerencia y Empleado
   const loginGer = await apiFetch(apiUrl, '/api/auth/login', {
     method: 'POST',
-    body: { email: 'gerencia@ebenel.com.pe', password: process.env.SEED_GERENCIA_PASSWORD || 'Ebenel2026!' }
+    body: { email: 'gerencia@ebenel.com.pe', password: process.env.SEED_GERENCIA_PASSWORD || 'admin123' }
   });
   assert.equal(loginGer.status, 200);
   assert.equal(loginGer.data.usuario.rol, 'GERENCIA');
@@ -262,7 +262,7 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
 
   const loginEmp = await apiFetch(apiUrl, '/api/auth/login', {
     method: 'POST',
-    body: { email: 'logistica@ebenel.com.pe', password: process.env.SEED_EMPLEADO_PASSWORD || 'Ebenel2026!' }
+    body: { email: 'logistica@ebenel.com.pe', password: process.env.SEED_EMPLEADO_PASSWORD || 'logistica123' }
   });
   assert.equal(loginEmp.status, 200);
   assert.equal(loginEmp.data.usuario.rol, 'EMPLEADO');

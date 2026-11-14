@@ -35,9 +35,9 @@ export default function LoginPage() {
     }
   }
 
-  function rellenarDemo(demoEmail) {
+  function rellenarDemo(demoEmail, demoPassword) {
     setEmail(demoEmail);
-    setPassword('Ebenel2026!');
+    setPassword(demoPassword);
     setError('');
   }
 
@@ -129,7 +129,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => rellenarDemo('gerencia@ebenel.com.pe')}
+                onClick={() => rellenarDemo('gerencia@ebenel.com.pe', 'admin123')}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-teal-300 hover:bg-teal-50/40"
               >
                 <div className="text-xs font-semibold text-slate-800">Gerencia</div>
@@ -137,7 +137,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => rellenarDemo('logistica@ebenel.com.pe')}
+                onClick={() => rellenarDemo('logistica@ebenel.com.pe', 'logistica123')}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-teal-300 hover:bg-teal-50/40"
               >
                 <div className="text-xs font-semibold text-slate-800">Empleado</div>

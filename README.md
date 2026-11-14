@@ -32,8 +32,8 @@ npm run install:all
 Copia `backend/.env.example` a `backend/.env` y coloca tu cadena de conexión PostgreSQL (`DATABASE_URL`) y `ERP_API_BASE_URL` (por defecto `https://simulador-erp-ebenel.onrender.com`).
 
 > **Credenciales iniciales (solo desarrollo / seed inicial si la tabla `usuarios` está vacía):**
-> - **Gerencia:** `gerencia@ebenel.com.pe` / `Ebenel2026!` (cámbialas en producción mediante `SEED_GERENCIA_PASSWORD` o desde la plataforma).
-> - **Empleado:** `logistica@ebenel.com.pe` / `Ebenel2026!`.
+> - **Gerencia:** `gerencia@ebenel.com.pe` / `admin123` (cámbialas en producción mediante `SEED_GERENCIA_PASSWORD` o desde la plataforma).
+> - **Empleado:** `logistica@ebenel.com.pe` / `logistica123`.
 
 ### 3. Ejecutar pruebas automatizadas del Backend (sin necesidad de BD externa)
 ```bash
