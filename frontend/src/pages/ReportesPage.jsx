@@ -28,7 +28,7 @@ export default function ReportesPage() {
     capital: false,
     cumplimiento: false,
     faltantes: false,
-    grafico: true
+    grafico: false
   });
 
   const toggleDefinicion = (clave) => {
@@ -160,7 +160,7 @@ export default function ReportesPage() {
               {definicionAbierta.capital && (
                 <div className="mt-3 rounded-lg border border-teal-100 bg-teal-50/70 p-3 text-xs leading-relaxed text-slate-700">
                   <div className="mb-1 font-semibold text-teal-900">¿Qué representa este valor?</div>
-                  Dinero en mercadería que estuvo retenida en almacén por sobreprecios facturados y que ya fue desbloqueada e ingresada al stock disponible tras gestionarse Notas de Crédito o acuerdos con los laboratorios proveedores.
+                  Dinero que estaba comprometido o retenido por sobreprecios facturados y que fue recuperado tras devolver el producto observado al proveedor o anularse el cobro con Nota de Crédito. Al liberarse, ese capital queda disponible como liquidez en caja para comprar nueva mercadería y no afectar las finanzas.
                 </div>
               )}
             </div>
@@ -328,7 +328,7 @@ export default function ReportesPage() {
                     <span>Capital Liberado</span>
                   </div>
                   <p className="mt-1 text-slate-600 leading-relaxed">
-                    Valor monetario desbloqueado e ingresado al inventario comercial disponible para la venta tras acuerdos o emisión de Notas de Crédito con el proveedor.
+                    Dinero que estaba comprometido a pagar por sobreprecios y que se libera tras devolver el producto o recibir una Nota de Crédito. Al no pagarse ese sobrecosto, el dinero vuelve a estar disponible en caja para comprar otros productos.
                   </p>
                 </div>
 
