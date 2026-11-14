@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   Save,
   RotateCcw,
-  Info,
   Calendar,
   Check,
   ChevronRight
@@ -110,15 +109,6 @@ export default function ProveedoresPage() {
             <p className="mt-1 text-xs text-slate-500">
               Configuración de los días de demora acordados para la entrega de órdenes de compra. Si una orden supera estos días, el sistema alertará automáticamente para el reclamo logístico correspondiente.
             </p>
-          </div>
-        </div>
-
-        {/* Tarjeta informativa para personal */}
-        <div className="mt-4 flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-4 text-xs text-slate-700">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />
-          <div className="leading-relaxed">
-            <span className="font-semibold text-teal-900">Personalización independiente de tiempos de abastecimiento: </span>
-            Por defecto, todo nuevo laboratorio se registra con <strong>3 días</strong> de plazo acordado. Los operadores y trabajadores pueden modificar los días de entrega de cada proveedor en cualquier momento. Al guardar, las órdenes de compra activas del laboratorio se re-auditan de forma automática.
           </div>
         </div>
       </div>
