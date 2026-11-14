@@ -374,6 +374,8 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
   assert.equal(repRes.data.rentabilidad.capital_inmovilizado_liberado_pen, 1200);
   assert.equal(repRes.data.rentabilidad.faltantes_valor_recuperado_pen, 250);
   assert.equal(repRes.data.rentabilidad.lucro_cesante_recuperado_pen, 290);
+  assert.ok(repRes.data.resumen_faltantes);
+  assert.equal(repRes.data.resumen_faltantes.unidades_gestionadas, 50);
 
   // 6.c EMPLEADO consulta y modifica plazo de entrega de un laboratorio proveedor
   const labsRes = await apiFetch(apiUrl, '/api/laboratorios', { token: tokenEmp });

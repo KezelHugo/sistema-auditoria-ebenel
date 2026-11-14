@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Printer, Wallet, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Printer, Wallet, CheckCircle2, HelpCircle, PackageMinus } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -26,7 +26,8 @@ export default function ReportesPage() {
 
   const [definicionAbierta, setDefinicionAbierta] = useState({
     capital: false,
-    cumplimiento: false
+    cumplimiento: false,
+    faltantes: false
   });
 
   const toggleDefinicion = (clave) => {
@@ -56,8 +57,15 @@ export default function ReportesPage() {
 
   const rent = data?.rentabilidad || {};
   const abast = data?.resumen_abastecimiento || {};
+  const falt = data?.resumen_faltantes || {};
   const evolucion = data?.evolucion_mensual || [];
   const labs = data?.ranking_laboratorios || [];
+
+  const unidadesPendientes = Number(falt.unidades_pendientes ?? rent.faltantes_unidades_pendientes ?? 0);
+  const productosPendientes = Number(falt.productos_pendientes ?? rent.faltantes_productos_pendientes ?? 0);
+  const unidadesGestionadas = Number(falt.unidades_gestionadas ?? rent.faltantes_unidades_gestionadas ?? 0);
+  const productosGestionados = Number(falt.productos_gestionados ?? rent.faltantes_productos_gestionados ?? 0);
+  const totalProductosFaltantes = Number(falt.total_productos_afectados ?? (productosPendientes + productosGestionados));
 
   // Paginación de 10 proveedores por página
   const totalPaginasLabs = Math.max(1, Math.ceil(labs.length / ITEMS_POR_PAGINA));
@@ -113,8 +121,8 @@ export default function ReportesPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Indicadores de Rentabilidad y Abastecimiento */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Indicadores de Rentabilidad, Abastecimiento y Faltantes */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Card 1: Capital Inmovilizado Liberado */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
@@ -194,6 +202,58 @@ export default function ReportesPage() {
                 <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
                   <div className="mb-1 font-semibold text-slate-900">¿Qué representa este valor?</div>
                   Nivel de servicio y efectividad de los laboratorios en la recepción física: porcentaje de órdenes de compra que ingresaron a almacén 100% conformes, sin unidades faltantes, sin sobrecostos facturados y dentro del plazo pactado.
+                </div>
+              )}
+            </div>
+
+            {/* Card 3: Productos Faltantes Pendientes de Gestión */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-800">Productos Faltantes Pendientes</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleDefinicion('faltantes')}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition ${
+                      definicionAbierta.faltantes
+                        ? 'border-amber-300 bg-amber-50 text-amber-800'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    title="Ver explicación de este indicador"
+                  >
+                    <HelpCircle className="h-3 w-3" />
+                    <span>{definicionAbierta.faltantes ? 'Ocultar' : '¿Qué es?'}</span>
+                  </button>
+                </div>
+                <PackageMinus className="h-4 w-4 text-amber-600" />
+              </div>
+
+              <div className="mt-2.5 flex items-baseline gap-2">
+                <span className={`text-2xl font-bold tabular-nums ${unidadesPendientes > 0 ? 'text-slate-900' : 'text-emerald-700'}`}>
+                  {unidadesPendientes} unid.
+                </span>
+                <span className="text-xs font-medium text-slate-500">
+                  ({productosPendientes} {productosPendientes === 1 ? 'producto' : 'productos'})
+                </span>
+              </div>
+
+              {totalProductosFaltantes === 0 ? (
+                <p className="mt-2 text-xs font-medium text-emerald-700">
+                  Sin entregas incompletas registradas
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                  Gestionados exitosamente:{' '}
+                  <strong className="font-semibold text-emerald-700">
+                    {unidadesGestionadas} unid. ({productosGestionados} {productosGestionados === 1 ? 'producto' : 'productos'})
+                  </strong>
+                </p>
+              )}
+
+              {definicionAbierta.faltantes && (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs leading-relaxed text-slate-700">
+                  <div className="mb-1 font-semibold text-amber-900">¿Qué representa este valor?</div>
+                  Volumen de unidades y productos farmacéuticos no entregados por los laboratorios en la recepción física que se encuentran pendientes de reclamo o reposición para evitar quiebres de inventario. Abajo se registran las unidades que ya fueron regularizadas exitosamente (reposición física o Notas de Crédito) para asegurar la continuidad de las ventas comerciales.
                 </div>
               )}
             </div>

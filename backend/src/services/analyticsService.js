@@ -133,6 +133,11 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
   let capInmovilizadoLiberado = 0;
   let faltantesDetectado = 0;
   let faltantesRecuperado = 0;
+  let faltantesUnidadesDetectadas = 0;
+  let faltantesUnidadesRegularizadas = 0;
+  let faltantesProductosPendientes = 0;
+  let faltantesProductosGestionados = 0;
+  let faltantesTotalIncidencias = 0;
   let incidenciasAbiertas = 0;
   let incidenciasEnGestion = 0;
   let incidenciasResueltas = 0;
@@ -165,8 +170,22 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
       capInmovilizadoDetectado = Number((capInmovilizadoDetectado + val).toFixed(2));
       capInmovilizadoLiberado = Number((capInmovilizadoLiberado + lib).toFixed(2));
     } else if (inc.tipo_incidencia === 'ENTREGA_INCOMPLETA') {
+      faltantesTotalIncidencias++;
+      const cantAfectada = Number(inc.cantidad_afectada || 0);
+      const cantReg = Number(inc.cantidad_regularizada || 0);
+      const esPendiente = ['ABIERTA', 'EN_GESTION', 'PENDIENTE_RECOJO'].includes(inc.estado_gestion);
+
       faltantesDetectado = Number((faltantesDetectado + val).toFixed(2));
       faltantesRecuperado = Number((faltantesRecuperado + lib).toFixed(2));
+      faltantesUnidadesDetectadas += cantAfectada;
+
+      if (esPendiente) {
+        faltantesProductosPendientes++;
+        faltantesUnidadesRegularizadas += cantReg;
+      } else {
+        faltantesProductosGestionados++;
+        faltantesUnidadesRegularizadas += (cantReg > 0 ? cantReg : cantAfectada);
+      }
     }
 
     const ocRef = ocById.get(inc.orden_compra_id);
@@ -220,6 +239,12 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
   const faltantesPendiente = Number(Math.max(0, faltantesDetectado - faltantesRecuperado).toFixed(2));
   const tasaLiberacionCapitalPct = capInmovilizadoDetectado > 0
     ? Number(((capInmovilizadoLiberado / capInmovilizadoDetectado) * 100).toFixed(2))
+    : 100;
+
+  faltantesUnidadesRegularizadas = Math.min(faltantesUnidadesDetectadas, faltantesUnidadesRegularizadas);
+  const faltantesUnidadesPendientes = Math.max(0, faltantesUnidadesDetectadas - faltantesUnidadesRegularizadas);
+  const faltantesTasaGestionPct = faltantesUnidadesDetectadas > 0
+    ? Number(((faltantesUnidadesRegularizadas / faltantesUnidadesDetectadas) * 100).toFixed(1))
     : 100;
 
   const margenPct = Number(cfg.margen_rentabilidad_pct || 20);
@@ -309,6 +334,12 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
       faltantes_valor_detectado_pen: faltantesDetectado,
       faltantes_valor_recuperado_pen: faltantesRecuperado,
       faltantes_valor_pendiente_pen: faltantesPendiente,
+      faltantes_unidades_detectadas: faltantesUnidadesDetectadas,
+      faltantes_unidades_regularizadas: faltantesUnidadesRegularizadas,
+      faltantes_unidades_pendientes: faltantesUnidadesPendientes,
+      faltantes_productos_pendientes: faltantesProductosPendientes,
+      faltantes_productos_gestionados: faltantesProductosGestionados,
+      faltantes_tasa_gestion_pct: faltantesTasaGestionPct,
       lucro_cesante_recuperado_pen: lucroCesanteRecuperado,
       lucro_cesante_en_riesgo_pen: lucroCesanteEnRiesgo,
       meta_mensual_lucro_cesante_pen: 2000.0,
@@ -317,6 +348,18 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
       despachos_mensuales_base: despachosBase,
       despachos_riesgo_estimado: despachosEnRiesgoActual,
       despachos_protegidos_vs_linea_base: despachosProtegidosVsBaseline
+    },
+    resumen_faltantes: {
+      productos_pendientes: faltantesProductosPendientes,
+      productos_gestionados: faltantesProductosGestionados,
+      total_productos_afectados: faltantesTotalIncidencias,
+      unidades_pendientes: faltantesUnidadesPendientes,
+      unidades_gestionadas: faltantesUnidadesRegularizadas,
+      total_unidades_faltantes: faltantesUnidadesDetectadas,
+      tasa_gestion_pct: faltantesTasaGestionPct,
+      valor_pendiente_pen: faltantesPendiente,
+      valor_recuperado_pen: faltantesRecuperado,
+      valor_total_pen: faltantesDetectado
     },
     pareto,
     ranking_laboratorios: rankingLaboratorios,
