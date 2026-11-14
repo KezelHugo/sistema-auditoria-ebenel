@@ -252,7 +252,8 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
       return {
         ...lab,
         ocs_conformes: conformes,
-        porcentaje_confianza: confianza
+        porcentaje_confianza: confianza,
+        tasa_cumplimiento_pct: confianza
       };
     })
     .sort((a, b) => b.incidencias - a.incidencias || b.capital_afectado - a.capital_afectado);

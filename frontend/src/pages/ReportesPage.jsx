@@ -12,14 +12,18 @@ import {
 } from 'recharts';
 import { api } from '../api/client';
 import Layout from '../components/Layout';
+import Paginacion from '../components/Paginacion';
 import { formatearMoneda } from '../utils/formatters';
 
 export default function ReportesPage() {
   const [periodo, setPeriodo] = useState('todo');
+  const [paginaTabla, setPaginaTabla] = useState(1);
   const [data, setData] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [exportando, setExportando] = useState(false);
   const [error, setError] = useState('');
+
+  const ITEMS_POR_PAGINA = 10;
 
   const [definicionAbierta, setDefinicionAbierta] = useState({
     capital: false,
@@ -47,6 +51,10 @@ export default function ReportesPage() {
     cargar();
   }, [cargar]);
 
+  useEffect(() => {
+    setPaginaTabla(1);
+  }, [periodo]);
+
   async function descargarCsv() {
     setExportando(true);
     try {
@@ -65,6 +73,12 @@ export default function ReportesPage() {
   const abast = data?.resumen_abastecimiento || {};
   const evolucion = data?.evolucion_mensual || [];
   const labs = data?.ranking_laboratorios || [];
+
+  // Paginación de 10 proveedores por página
+  const totalPaginasLabs = Math.max(1, Math.ceil(labs.length / ITEMS_POR_PAGINA));
+  const paginaValidaLabs = Math.min(Math.max(1, paginaTabla), totalPaginasLabs);
+  const inicioLabs = (paginaValidaLabs - 1) * ITEMS_POR_PAGINA;
+  const labsPaginados = labs.slice(inicioLabs, inicioLabs + ITEMS_POR_PAGINA);
 
   const capLiberado = Number(rent.capital_inmovilizado_liberado_pen || 0);
 
@@ -252,6 +266,7 @@ export default function ReportesPage() {
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase text-slate-500">
                   <tr>
                     <th className="px-5 py-3">Laboratorio Proveedor</th>
+                    <th className="px-5 py-3 text-center">Confiabilidad (Cumplimiento Histórico)</th>
                     <th className="px-5 py-3 text-right">Total OCs</th>
                     <th className="px-5 py-3 text-right">OCs c/ Falla</th>
                     <th className="px-5 py-3 text-right">Incidencias</th>
@@ -260,22 +275,82 @@ export default function ReportesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/70">
-                  {labs.map(lab => (
-                    <tr key={lab.laboratorio} className="hover:bg-slate-50/70">
-                      <td className="px-5 py-3 font-medium text-slate-900">{lab.laboratorio}</td>
-                      <td className="px-5 py-3 text-right text-slate-700 tabular-nums">{lab.total_ocs}</td>
-                      <td className="px-5 py-3 text-right text-slate-700 tabular-nums">{lab.ocs_con_fallas}</td>
-                      <td className="px-5 py-3 text-right font-semibold text-slate-900 tabular-nums">{lab.incidencias}</td>
-                      <td className="px-5 py-3 text-right font-medium text-rose-700 tabular-nums">
-                        {formatearMoneda(lab.capital_afectado)}
-                      </td>
-                      <td className="px-5 py-3 text-right font-semibold text-emerald-700 tabular-nums">
-                        {formatearMoneda(lab.capital_liberado)}
+                  {labs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-5 py-8 text-center text-slate-400">
+                        No se registraron movimientos para el período seleccionado.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    labsPaginados.map(lab => {
+                      const totalOcs = Number(lab.total_ocs || 0);
+                      const ocsFallas = Number(lab.ocs_con_fallas || 0);
+                      const conformes = lab.ocs_conformes !== undefined
+                        ? Number(lab.ocs_conformes)
+                        : Math.max(0, totalOcs - ocsFallas);
+                      const confianza = lab.porcentaje_confianza !== undefined
+                        ? Number(lab.porcentaje_confianza)
+                        : (lab.tasa_cumplimiento_pct !== undefined
+                          ? Number(lab.tasa_cumplimiento_pct)
+                          : (totalOcs > 0 ? Number(((conformes / totalOcs) * 100).toFixed(1)) : 100));
+
+                      let badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                      let barColor = 'bg-emerald-500';
+                      if (confianza < 75) {
+                        badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                        barColor = 'bg-rose-500';
+                      } else if (confianza < 90) {
+                        badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                        barColor = 'bg-amber-500';
+                      }
+
+                      return (
+                        <tr key={lab.laboratorio} className="hover:bg-slate-50/70 transition">
+                          <td className="px-5 py-3 font-medium text-slate-900">{lab.laboratorio}</td>
+                          <td className="px-5 py-3 text-center">
+                            <div className="inline-flex flex-col items-center">
+                              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold tabular-nums ${badgeColor}`}>
+                                {confianza}%
+                              </span>
+                              <div className="mx-auto mt-1 h-1 w-16 overflow-hidden rounded-full bg-slate-100">
+                                <div className={`h-full ${barColor}`} style={{ width: `${confianza}%` }} />
+                              </div>
+                              <span className="mt-0.5 text-[10px] text-slate-400 tabular-nums">
+                                {conformes} de {totalOcs} conformes
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-right text-slate-700 tabular-nums">{totalOcs}</td>
+                          <td className="px-5 py-3 text-right text-slate-700 tabular-nums">
+                            {ocsFallas > 0 ? (
+                              <span className="font-semibold text-rose-600">{ocsFallas}</span>
+                            ) : (
+                              <span>0</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 text-right font-semibold text-slate-900 tabular-nums">{lab.incidencias}</td>
+                          <td className="px-5 py-3 text-right font-medium text-rose-700 tabular-nums">
+                            {formatearMoneda(lab.capital_afectado)}
+                          </td>
+                          <td className="px-5 py-3 text-right font-semibold text-emerald-700 tabular-nums">
+                            {formatearMoneda(lab.capital_liberado)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="no-print">
+              <Paginacion
+                paginaActual={paginaValidaLabs}
+                totalRegistros={labs.length}
+                porPagina={ITEMS_POR_PAGINA}
+                alCambiarPagina={setPaginaTabla}
+                nombreEntidad="proveedores"
+              />
             </div>
           </div>
         </div>
