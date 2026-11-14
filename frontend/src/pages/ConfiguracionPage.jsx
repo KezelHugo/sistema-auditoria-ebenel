@@ -43,7 +43,6 @@ export default function ConfiguracionPage() {
         erp_base_url: form.erp_base_url,
         sync_interval_minutos: Number(form.sync_interval_minutos),
         tolerancia_dias_retraso: Number(form.tolerancia_dias_retraso),
-        margen_rentabilidad_pct: Number(form.margen_rentabilidad_pct),
         costo_hora_operativa: Number(form.costo_hora_operativa),
         horas_manuales_semana: Number(form.horas_manuales_semana),
         despachos_mensuales_base: Number(form.despachos_mensuales_base)
@@ -185,39 +184,24 @@ export default function ConfiguracionPage() {
               </div>
             </div>
 
-            {/* Parámetros del Algoritmo y Rentabilidad */}
+            {/* Parámetros del Algoritmo de Auditoría */}
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-6">
-              <h2 className="text-sm font-semibold text-slate-900">Tolerancia de Retraso y Margen Comercial</h2>
+              <h2 className="text-sm font-semibold text-slate-900">Tolerancia de Retraso en Recepciones</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Parámetros aplicados por el algoritmo de auditoría para detección de retrasos y cálculo de margen comercial protegido.
+                Días de gracia aplicados por el algoritmo de auditoría logística tras la fecha pactada de entrega de la Orden de Compra.
               </p>
 
-              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">Tolerancia retraso (días)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={30}
-                    value={form.tolerancia_dias_retraso}
-                    onChange={e => setForm({ ...form, tolerancia_dias_retraso: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
-                  />
-                  <p className="mt-1 text-[11px] text-slate-400">Días de gracia tras fecha pactada de entrega</p>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">Margen comercial (%)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min={1}
-                    max={90}
-                    value={form.margen_rentabilidad_pct}
-                    onChange={e => setForm({ ...form, margen_rentabilidad_pct: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
-                  />
-                  <p className="mt-1 text-[11px] text-slate-400">Margen de ganancia aplicado a ventas</p>
-                </div>
+              <div className="mt-5 max-w-sm">
+                <label className="mb-1 block text-xs font-medium text-slate-700">Tolerancia retraso (días)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={form.tolerancia_dias_retraso}
+                  onChange={e => setForm({ ...form, tolerancia_dias_retraso: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
+                />
+                <p className="mt-1 text-[11px] text-slate-400">Días de gracia tras fecha pactada antes de generar alerta por demora</p>
               </div>
             </div>
 

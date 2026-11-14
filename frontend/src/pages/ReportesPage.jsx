@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Download, Printer, Wallet, TrendingUp, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Download, Printer, Wallet, CheckCircle2, HelpCircle } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -23,7 +23,6 @@ export default function ReportesPage() {
 
   const [definicionAbierta, setDefinicionAbierta] = useState({
     capital: false,
-    margen: false,
     cumplimiento: false
   });
 
@@ -68,7 +67,6 @@ export default function ReportesPage() {
   const labs = data?.ranking_laboratorios || [];
 
   const capLiberado = Number(rent.capital_inmovilizado_liberado_pen || 0);
-  const lucroRec = Number(rent.lucro_cesante_recuperado_pen || 0);
 
   return (
     <Layout onSyncComplete={cargar}>
@@ -126,7 +124,7 @@ export default function ReportesPage() {
       ) : (
         <div className="space-y-6">
           {/* Indicadores de Rentabilidad y Abastecimiento */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Card 1: Capital Inmovilizado Liberado */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
@@ -168,48 +166,7 @@ export default function ReportesPage() {
               )}
             </div>
 
-            {/* Card 2: Margen Comercial Protegido */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs font-semibold text-slate-800">Margen Comercial Protegido</span>
-                  <button
-                    type="button"
-                    onClick={() => toggleDefinicion('margen')}
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition ${
-                      definicionAbierta.margen
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                    title="Ver explicación de este indicador"
-                  >
-                    <HelpCircle className="h-3 w-3" />
-                    <span>{definicionAbierta.margen ? 'Ocultar' : '¿Qué es?'}</span>
-                  </button>
-                </div>
-                <TrendingUp className="h-4 w-4 text-emerald-700" />
-              </div>
-
-              <div className="mt-2.5 text-2xl font-bold text-slate-900 tabular-nums">
-                {formatearMoneda(lucroRec)}
-              </div>
-
-              <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                En riesgo comercial:{' '}
-                <strong className="font-semibold text-amber-700">
-                  {formatearMoneda(rent.lucro_cesante_en_riesgo_pen)}
-                </strong>
-              </p>
-
-              {definicionAbierta.margen && (
-                <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-relaxed text-slate-700">
-                  <div className="mb-1 font-semibold text-emerald-900">¿Qué representa este valor?</div>
-                  Ganancia comercial asegurada para la empresa (margen del 20% sobre los productos recuperados), protegiendo a la droguería de pérdidas por quiebres de inventario o mercadería inmovilizada que no se podía facturar a clientes.
-                </div>
-              )}
-            </div>
-
-            {/* Card 3: Cumplimiento de Entregas (Órdenes) */}
+            {/* Card 2: Cumplimiento de Entregas (Órdenes) */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex flex-wrap items-center gap-1.5">
