@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import Layout from '../components/Layout';
+import Paginacion from '../components/Paginacion';
 import { formatearFechaCortaLima } from '../utils/formatters';
 
 export default function ProveedoresPage() {
@@ -21,9 +22,12 @@ export default function ProveedoresPage() {
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [filtroPlazo, setFiltroPlazo] = useState('TODOS');
+  const [pagina, setPagina] = useState(1);
   const [ediciones, setEdiciones] = useState({});
   const [guardandoId, setGuardandoId] = useState(null);
   const [feedback, setFeedback] = useState(null);
+
+  const ITEMS_POR_PAGINA = 10;
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -48,6 +52,10 @@ export default function ProveedoresPage() {
     const timer = setTimeout(cargar, 250);
     return () => clearTimeout(timer);
   }, [cargar]);
+
+  useEffect(() => {
+    setPagina(1);
+  }, [busqueda, filtroPlazo]);
 
   const handleCambiarPlazo = (id, nuevoValor) => {
     const valNum = Math.min(60, Math.max(1, parseInt(nuevoValor, 10) || 1));
@@ -90,6 +98,12 @@ export default function ProveedoresPage() {
     if (filtroPlazo === 'EXTENDIDO') return plazo >= 4;
     return true;
   });
+
+  // Paginación de 10 proveedores por página
+  const totalPaginas = Math.max(1, Math.ceil(listaFiltrada.length / ITEMS_POR_PAGINA));
+  const paginaValida = Math.min(Math.max(1, pagina), totalPaginas);
+  const inicio = (paginaValida - 1) * ITEMS_POR_PAGINA;
+  const laboratoriosPaginados = listaFiltrada.slice(inicio, inicio + ITEMS_POR_PAGINA);
 
   // Estadísticas generales
   const totalLabs = lista.length;
@@ -211,7 +225,8 @@ export default function ProveedoresPage() {
             No se encontraron laboratorios con los filtros aplicados.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase text-slate-500">
                 <tr>
@@ -223,7 +238,7 @@ export default function ProveedoresPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/70">
-                {listaFiltrada.map(lab => {
+                {laboratoriosPaginados.map(lab => {
                   const plazoActual = ediciones[lab.id] ?? Number(lab.plazo_entrega_dias || 3);
                   const haCambiado = plazoActual !== Number(lab.plazo_entrega_dias || 3);
                   const estaGuardando = guardandoId === lab.id;
@@ -382,6 +397,15 @@ export default function ProveedoresPage() {
               </tbody>
             </table>
           </div>
+
+            <Paginacion
+              paginaActual={paginaValida}
+              totalRegistros={listaFiltrada.length}
+              porPagina={ITEMS_POR_PAGINA}
+              alCambiarPagina={setPagina}
+              nombreEntidad="proveedores"
+            />
+          </>
         )}
       </div>
     </Layout>
