@@ -375,6 +375,21 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
   assert.equal(repRes.data.rentabilidad.faltantes_valor_recuperado_pen, 250);
   assert.equal(repRes.data.rentabilidad.lucro_cesante_recuperado_pen, 290);
 
+  // 6.c EMPLEADO consulta y modifica plazo de entrega de un laboratorio proveedor
+  const labsRes = await apiFetch(apiUrl, '/api/laboratorios', { token: tokenEmp });
+  assert.equal(labsRes.status, 200);
+  assert.ok(labsRes.data.data.length > 0);
+  const targetLab = labsRes.data.data[0];
+  assert.equal(targetLab.plazo_entrega_dias, 3); // default 3 días
+
+  const patchLabRes = await apiFetch(apiUrl, `/api/laboratorios/${targetLab.id}`, {
+    method: 'PATCH',
+    token: tokenEmp,
+    body: { plazo_entrega_dias: 5 }
+  });
+  assert.equal(patchLabRes.status, 200);
+  assert.equal(patchLabRes.data.data.plazo_entrega_dias, 5);
+
   // CSV con UTF-8 BOM
   const csvRes = await apiFetch(apiUrl, '/api/reportes/export-csv', { token: tokenEmp });
   assert.equal(csvRes.status, 200);

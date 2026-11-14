@@ -11,6 +11,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const erpDataRoutes = require('./routes/erpDataRoutes');
 const incidenciasRoutes = require('./routes/incidenciasRoutes');
 const reportesRoutes = require('./routes/reportesRoutes');
+const laboratoriosRoutes = require('./routes/laboratoriosRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 function crearCorsMiddleware() {
@@ -52,6 +53,7 @@ function createApp() {
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/ordenes-compra', erpDataRoutes);
   app.use('/api/incidencias', incidenciasRoutes);
+  app.use('/api/laboratorios', laboratoriosRoutes);
   app.use('/api/reportes', reportesRoutes);
   app.use('/api/admin', adminRoutes);
 

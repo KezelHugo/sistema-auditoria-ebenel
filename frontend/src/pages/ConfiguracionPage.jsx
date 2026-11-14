@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Save, Wifi, RefreshCw, Database } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Save, Wifi, RefreshCw, Database, Truck, SlidersHorizontal } from 'lucide-react';
 import { api } from '../api/client';
 import Layout from '../components/Layout';
 import { formatearFechaLima } from '../utils/formatters';
@@ -42,7 +43,6 @@ export default function ConfiguracionPage() {
       const payload = {
         erp_base_url: form.erp_base_url,
         sync_interval_minutos: Number(form.sync_interval_minutos),
-        tolerancia_dias_retraso: Number(form.tolerancia_dias_retraso),
         costo_hora_operativa: Number(form.costo_hora_operativa),
         horas_manuales_semana: Number(form.horas_manuales_semana),
         despachos_mensuales_base: Number(form.despachos_mensuales_base)
@@ -184,24 +184,30 @@ export default function ConfiguracionPage() {
               </div>
             </div>
 
-            {/* Parámetros del Algoritmo de Auditoría */}
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-6">
-              <h2 className="text-sm font-semibold text-slate-900">Tolerancia de Retraso en Recepciones</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Días de gracia aplicados por el algoritmo de auditoría logística tras la fecha pactada de entrega de la Orden de Compra.
-              </p>
+            {/* Tiempos de Entrega por Proveedor */}
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-6 flex flex-col justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <Truck className="h-4 w-4 text-teal-700" />
+                  Plazos de Entrega por Laboratorio Proveedor
+                </h2>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  El sistema ya no aplica una tolerancia global fija. Ahora los tiempos acordados de abastecimiento se configuran de forma independiente por cada proveedor en el apartado <strong>Plazos de Proveedores</strong> (por defecto 3 días), modificables libremente por los operadores logísticos.
+                </p>
+                <div className="mt-3 rounded-lg border border-teal-100 bg-teal-50/60 p-3 text-xs text-slate-700">
+                  <span className="font-semibold text-teal-900">Alerta de reclamo automático: </span>
+                  Si una orden de compra supera el plazo de entrega pactado con su respectivo laboratorio, se genera la alerta para el reclamo logístico inmediato.
+                </div>
+              </div>
 
-              <div className="mt-5 max-w-sm">
-                <label className="mb-1 block text-xs font-medium text-slate-700">Tolerancia retraso (días)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={30}
-                  value={form.tolerancia_dias_retraso}
-                  onChange={e => setForm({ ...form, tolerancia_dias_retraso: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
-                />
-                <p className="mt-1 text-[11px] text-slate-400">Días de gracia tras fecha pactada antes de generar alerta por demora</p>
+              <div className="mt-5">
+                <Link
+                  to="/proveedores"
+                  className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-teal-800 transition"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <span>Gestionar Plazos de Laboratorios</span>
+                </Link>
               </div>
             </div>
 

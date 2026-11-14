@@ -11,7 +11,8 @@ import {
   LogOut,
   X,
   KeyRound,
-  Activity
+  Activity,
+  Truck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -21,6 +22,7 @@ const NAV_OPERACION = [
   { to: '/', label: 'Panel General', icon: LayoutDashboard, exact: true },
   { to: '/incidencias', label: 'Incidencias Logísticas', icon: AlertTriangle },
   { to: '/ordenes-compra', label: 'Órdenes de Compra', icon: ClipboardList },
+  { to: '/proveedores', label: 'Plazos de Proveedores', icon: Truck },
   { to: '/reportes', label: 'Rentabilidad y Reportes', icon: BarChart3 }
 ];
 
@@ -34,10 +36,11 @@ const TITULOS_RUTA = {
   '/': 'Panel Ejecutivo de Trazabilidad Logística',
   '/incidencias': 'Gestión de Incidencias Logísticas',
   '/ordenes-compra': 'Órdenes de Compra e Ingresos Conciliados',
+  '/proveedores': 'Plazos de Entrega Acordados por Laboratorio Proveedor',
   '/reportes': 'Reportes de Rentabilidad y Cumplimiento Logístico',
   '/admin/trabajadores': 'Administración de Trabajadores y Accesos',
   '/admin/auditoria': 'Registro de Auditoría e Inmutabilidad del Sistema',
-  '/admin/configuracion': 'Configuración del Motor ERP y Tolerancias'
+  '/admin/configuracion': 'Configuración del Motor ERP'
 };
 
 function PasswordModal({ onClose }) {

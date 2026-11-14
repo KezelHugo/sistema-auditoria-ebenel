@@ -359,10 +359,10 @@ router.put('/config', async (req, res, next) => {
       : Number(actual.tolerancia_precio_pct);
     const tolDias = req.body?.tolerancia_dias_retraso !== undefined
       ? Number(req.body.tolerancia_dias_retraso)
-      : Number(actual.tolerancia_dias_retraso);
+      : (actual.tolerancia_dias_retraso !== undefined ? Number(actual.tolerancia_dias_retraso) : 0);
     const margenPct = req.body?.margen_rentabilidad_pct !== undefined
       ? Number(req.body.margen_rentabilidad_pct)
-      : Number(actual.margen_rentabilidad_pct);
+      : (actual.margen_rentabilidad_pct !== undefined ? Number(actual.margen_rentabilidad_pct) : 20);
     const costoHora = req.body?.costo_hora_operativa !== undefined
       ? Number(req.body.costo_hora_operativa)
       : Number(actual.costo_hora_operativa);
@@ -376,13 +376,13 @@ router.put('/config', async (req, res, next) => {
     if (!Number.isInteger(syncInterval) || syncInterval < 1 || syncInterval > 60) {
       return res.status(400).json({ error: 'sync_interval_minutos debe ser entero entre 1 y 60.' });
     }
-    if (!Number.isFinite(tolPrecio) || tolPrecio < 0 || tolPrecio > 50) {
+    if (req.body?.tolerancia_precio_pct !== undefined && (!Number.isFinite(tolPrecio) || tolPrecio < 0 || tolPrecio > 50)) {
       return res.status(400).json({ error: 'tolerancia_precio_pct debe estar entre 0 y 50.' });
     }
-    if (!Number.isInteger(tolDias) || tolDias < 0 || tolDias > 30) {
+    if (req.body?.tolerancia_dias_retraso !== undefined && (!Number.isInteger(tolDias) || tolDias < 0 || tolDias > 30)) {
       return res.status(400).json({ error: 'tolerancia_dias_retraso debe ser entero entre 0 y 30.' });
     }
-    if (!Number.isFinite(margenPct) || margenPct <= 0 || margenPct > 90) {
+    if (req.body?.margen_rentabilidad_pct !== undefined && (!Number.isFinite(margenPct) || margenPct <= 0 || margenPct > 90)) {
       return res.status(400).json({ error: 'margen_rentabilidad_pct debe estar entre 0.1 y 90.' });
     }
     if (!Number.isFinite(costoHora) || costoHora < 0 || costoHora > 1000) {

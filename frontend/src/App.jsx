@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IncidenciasPage from './pages/IncidenciasPage';
 import OrdenesPage from './pages/OrdenesPage';
+import ProveedoresPage from './pages/ProveedoresPage';
 import ReportesPage from './pages/ReportesPage';
 import TrabajadoresPage from './pages/TrabajadoresPage';
 import AuditoriaPage from './pages/AuditoriaPage';
@@ -61,6 +62,14 @@ function RutasApp() {
         element={
           <RutaProtegida>
             <OrdenesPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/proveedores"
+        element={
+          <RutaProtegida>
+            <ProveedoresPage />
           </RutaProtegida>
         }
       />

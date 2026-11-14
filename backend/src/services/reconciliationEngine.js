@@ -24,31 +24,50 @@ function crearClaveUnica(ocId, tipoIncidencia, sku = null) {
   return `${ocId}:${tipoIncidencia}:${sku || '__OC__'}`;
 }
 
-function conciliarOrdenCompra(oc, ingreso = null, config = {}, ahora = new Date()) {
+function conciliarOrdenCompra(oc, ingreso = null, config = {}, ahora = new Date(), plazoDiasLab = null) {
   const toleranciaPrecioPct = Math.max(0, Number(config.tolerancia_precio_pct || 0));
-  const toleranciaDiasRetraso = Math.max(0, Number(config.tolerancia_dias_retraso || 0));
   const msDia = 24 * 60 * 60 * 1000;
 
   const incidencias = [];
   const resumenReglas = [];
 
-  const fechaPactadaMs = Date.parse(oc.fecha_entrega_pactada);
-  const fechaLimiteMs = fechaPactadaMs + toleranciaDiasRetraso * msDia;
-  const ahoraMs = ahora.getTime();
+  // Determinación de la fecha límite acordada con el proveedor:
+  // Si se indica plazoDiasLab (días configurados para este proveedor específico, default 3):
+  // la fecha pactada se calcula desde la emisión de la OC: fechaEmision + plazoDias * msDia (sin tolerancia artificial)
+  let fechaLimiteMs;
+  let fechaPactadaMs;
 
+  if (plazoDiasLab !== null && plazoDiasLab !== undefined && !Number.isNaN(Number(plazoDiasLab))) {
+    const plazoDias = Math.max(1, Number(plazoDiasLab));
+    const fechaEmisionMs = Date.parse(oc.fecha_emision);
+    if (!Number.isNaN(fechaEmisionMs)) {
+      fechaPactadaMs = fechaEmisionMs + plazoDias * msDia;
+      fechaLimiteMs = fechaPactadaMs;
+    } else {
+      fechaPactadaMs = Date.parse(oc.fecha_entrega_pactada);
+      fechaLimiteMs = fechaPactadaMs;
+    }
+  } else {
+    // Compatibilidad con pruebas unitarias que no pasan plazoDiasLab
+    const toleranciaDiasRetraso = Math.max(0, Number(config.tolerancia_dias_retraso || 0));
+    fechaPactadaMs = Date.parse(oc.fecha_entrega_pactada);
+    fechaLimiteMs = fechaPactadaMs + toleranciaDiasRetraso * msDia;
+  }
+
+  const ahoraMs = ahora.getTime();
   let diasRetraso = 0;
 
   // Regla 3: Retraso en entrega (aplica tanto a recepciones demoradas como a OCs vencidas aún sin arribo)
-  if (!Number.isNaN(fechaPactadaMs)) {
+  if (!Number.isNaN(fechaLimiteMs)) {
     const referenciaMs = ingreso
       ? Date.parse(ingreso.fecha_recepcion_fisica)
       : ahoraMs;
 
     if (!Number.isNaN(referenciaMs) && referenciaMs > fechaLimiteMs) {
-      diasRetraso = Math.max(1, Math.ceil((referenciaMs - fechaPactadaMs) / msDia));
+      diasRetraso = Math.max(1, Math.ceil((referenciaMs - fechaLimiteMs) / msDia));
       const descripcionRetraso = ingreso
-        ? `Ingreso físico (${ingreso.numero_guia_ingreso}) registrado ${diasRetraso} día(s) después de la fecha pactada.`
-        : `Orden de compra vencida aún sin ingreso en almacén (${diasRetraso} día(s) de demora sobre el plazo pactado).`;
+        ? `Ingreso físico (${ingreso.numero_guia_ingreso}) registrado ${diasRetraso} día(s) después del plazo acordado con el proveedor (${plazoDiasLab ? `${plazoDiasLab} días` : 'plazo pactado'}).`
+        : `Orden de compra sin ingreso en almacén: superó el plazo acordado (${diasRetraso} día(s) de demora para reclamo logístico).`;
 
       incidencias.push({
         clave_unica: crearClaveUnica(oc.id, 'RETRASO_ENTREGA'),

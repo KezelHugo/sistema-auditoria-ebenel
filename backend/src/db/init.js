@@ -29,6 +29,10 @@ async function inicializarBaseDatos() {
       ALTER TABLE incidencias_logisticas ADD COLUMN IF NOT EXISTS cantidad_regularizada INTEGER NOT NULL DEFAULT 0;
       ALTER TABLE incidencias_logisticas ADD COLUMN IF NOT EXISTS fecha_compromiso_entrega TIMESTAMP;
       ALTER TABLE incidencias_logisticas ADD COLUMN IF NOT EXISTS recordatorio_nota TEXT;
+      ALTER TABLE erp_laboratorios ADD COLUMN IF NOT EXISTS plazo_entrega_dias INTEGER NOT NULL DEFAULT 3;
+      ALTER TABLE erp_laboratorios ADD COLUMN IF NOT EXISTS updated_by INTEGER;
+      ALTER TABLE erp_laboratorios ADD COLUMN IF NOT EXISTS updated_by_nombre VARCHAR(150);
+      ALTER TABLE erp_laboratorios ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
     `);
   } catch (_e) {
     // Si la tabla ya contiene las columnas o el driver no soporta ALTER TABLE IF NOT EXISTS

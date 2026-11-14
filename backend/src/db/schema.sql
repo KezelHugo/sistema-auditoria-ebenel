@@ -75,6 +75,10 @@ CREATE TABLE IF NOT EXISTS erp_laboratorios (
   razon_social VARCHAR(180) NOT NULL,
   nombre_comercial VARCHAR(120),
   direccion VARCHAR(250),
+  plazo_entrega_dias INTEGER NOT NULL DEFAULT 3,
+  updated_by INTEGER,
+  updated_by_nombre VARCHAR(150),
+  updated_at TIMESTAMP,
   synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

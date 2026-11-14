@@ -26,8 +26,8 @@ async function upsertLaboratorios(client, labs = []) {
       );
     } else {
       await client.query(
-        `INSERT INTO erp_laboratorios (id, ruc, razon_social, nombre_comercial, direccion, synced_at)
-         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+        `INSERT INTO erp_laboratorios (id, ruc, razon_social, nombre_comercial, direccion, plazo_entrega_dias, synced_at)
+         VALUES ($1, $2, $3, $4, $5, 3, CURRENT_TIMESTAMP)`,
         [lab.id, lab.ruc || null, lab.razon_social, lab.nombre_comercial || null, lab.direccion || null]
       );
     }
@@ -397,6 +397,16 @@ async function persistirConciliacion(client, resultado) {
     }
   }
 
+  // Si la conciliación actual no detectó retraso para esta OC, pero existía una incidencia previa de RETRASO_ENTREGA aún no resuelta, retirarla
+  const tieneRetrasoActual = resultado.incidencias.some(i => i.tipo_incidencia === 'RETRASO_ENTREGA');
+  if (!tieneRetrasoActual) {
+    await client.query(
+      `DELETE FROM incidencias_logisticas
+       WHERE orden_compra_id = $1 AND tipo_incidencia = 'RETRASO_ENTREGA' AND estado_gestion IN ('ABIERTA', 'EN_GESTION')`,
+      [resultado.orden_compra_id]
+    );
+  }
+
   return nuevasDetectadas;
 }
 
@@ -524,10 +534,15 @@ async function ejecutarSincronizacion({
 
       let incidenciasNuevas = 0;
       const ahora = new Date();
+
+      const { rows: labRows } = await client.query('SELECT id, plazo_entrega_dias FROM erp_laboratorios');
+      const plazoPorLab = new Map(labRows.map(l => [l.id, Number(l.plazo_entrega_dias || 3)]));
+
       for (const ocId of ocIdsParaAuditar) {
         const loaded = await cargarOrdenConDetalleLocal(client, ocId);
         if (!loaded) continue;
-        const resConc = conciliarOrdenCompra(loaded.oc, loaded.ingreso, cfg, ahora);
+        const plazoLab = loaded.oc?.laboratorio_id ? plazoPorLab.get(loaded.oc.laboratorio_id) : 3;
+        const resConc = conciliarOrdenCompra(loaded.oc, loaded.ingreso, cfg, ahora, plazoLab);
         incidenciasNuevas += await persistirConciliacion(client, resConc);
       }
 
@@ -669,9 +684,39 @@ async function verificarEstadoErpEnVivo(forzarPing = false) {
   };
 }
 
+async function reconciliarOrdenesDeLaboratorio(clientOrDb, labId) {
+  const { rows: labRows } = await clientOrDb.query(
+    'SELECT id, plazo_entrega_dias, razon_social FROM erp_laboratorios WHERE id = $1',
+    [labId]
+  );
+  if (labRows.length === 0) return 0;
+  const lab = labRows[0];
+  const plazoDias = Number(lab.plazo_entrega_dias || 3);
+
+  const { rows: cfgRows } = await clientOrDb.query('SELECT * FROM configuracion_sistema WHERE id = 1');
+  const cfg = cfgRows[0] || {};
+
+  const { rows: ocRows } = await clientOrDb.query(
+    'SELECT id FROM erp_ordenes_compra WHERE laboratorio_id = $1',
+    [labId]
+  );
+
+  const ahora = new Date();
+  let incidenciasAfectadas = 0;
+  for (const ocRow of ocRows) {
+    const loaded = await cargarOrdenConDetalleLocal(clientOrDb, ocRow.id);
+    if (!loaded) continue;
+    const resConc = conciliarOrdenCompra(loaded.oc, loaded.ingreso, cfg, ahora, plazoDias);
+    incidenciasAfectadas += await persistirConciliacion(clientOrDb, resConc);
+  }
+
+  return ocRows.length;
+}
+
 module.exports = {
   ejecutarSincronizacion,
   verificarEstadoErpEnVivo,
   isSyncRunning,
-  obtenerConfigSistema
+  obtenerConfigSistema,
+  reconciliarOrdenesDeLaboratorio
 };
