@@ -1,28 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Save, Wifi, RefreshCw, Database, Truck, SlidersHorizontal } from 'lucide-react';
+import { RefreshCw, Truck, SlidersHorizontal } from 'lucide-react';
 import { api } from '../api/client';
 import Layout from '../components/Layout';
 import { formatearFechaLima } from '../utils/formatters';
 
 export default function ConfiguracionPage() {
-  const [form, setForm] = useState(null);
-  const [erpApiKeyNueva, setErpApiKeyNueva] = useState('');
   const [logs, setLogs] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [probando, setProbando] = useState(false);
   const [resyncando, setResyncando] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   const cargarTodo = useCallback(async () => {
     setCargando(true);
     try {
-      const [cfgRes, logsRes] = await Promise.all([
-        api.get('/api/admin/config'),
-        api.get('/api/admin/sync-logs?limit=15')
-      ]);
-      setForm(cfgRes.config);
+      const logsRes = await api.get('/api/admin/sync-logs?limit=15');
       setLogs(logsRes.data || []);
     } catch (err) {
       setFeedback({ tipo: 'error', texto: err.message });
@@ -34,51 +26,6 @@ export default function ConfiguracionPage() {
   useEffect(() => {
     cargarTodo();
   }, [cargarTodo]);
-
-  async function guardar(e) {
-    e.preventDefault();
-    setGuardando(true);
-    setFeedback(null);
-    try {
-      const payload = {
-        erp_base_url: form.erp_base_url,
-        sync_interval_minutos: Number(form.sync_interval_minutos),
-        costo_hora_operativa: Number(form.costo_hora_operativa),
-        horas_manuales_semana: Number(form.horas_manuales_semana),
-        despachos_mensuales_base: Number(form.despachos_mensuales_base)
-      };
-      if (erpApiKeyNueva.trim()) {
-        payload.erp_api_key = erpApiKeyNueva.trim();
-      }
-      const res = await api.put('/api/admin/config', payload);
-      setForm(res.config);
-      setErpApiKeyNueva('');
-      setFeedback({ tipo: 'ok', texto: 'Configuración guardada y registrada en auditoría.' });
-    } catch (err) {
-      setFeedback({ tipo: 'error', texto: err.message });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function probarConexion() {
-    setProbando(true);
-    setFeedback(null);
-    try {
-      const res = await api.post('/api/admin/test-erp', {
-        erp_base_url: form.erp_base_url,
-        erp_api_key: erpApiKeyNueva.trim() || undefined
-      });
-      setFeedback({
-        tipo: 'ok',
-        texto: `Conexión exitosa (${res.latencia_ms}ms) • Modo ERP: ${res.modo_actual} • OCs disponibles: ${res.ocs_en_erp ?? 'N/D'}`
-      });
-    } catch (err) {
-      setFeedback({ tipo: 'error', texto: `Sin conexión al ERP: ${err.message}` });
-    } finally {
-      setProbando(false);
-    }
-  }
 
   async function forzarResyncBootstrap() {
     setResyncando(true);
@@ -115,92 +62,40 @@ export default function ConfiguracionPage() {
         </div>
       )}
 
-      {cargando || !form ? (
+      {cargando && logs.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
           Cargando configuración del sistema...
         </div>
       ) : (
         <div className="space-y-6">
-          <form onSubmit={guardar} className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Integración ERP */}
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-6">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <Database className="h-4 w-4 text-teal-700" />
-                Conexión con API del ERP (Módulo 1)
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Conexión de solo lectura mediante API REST con sincronización automática cada 5 minutos.
-              </p>
-
-              <div className="mt-5 space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">URL Base del ERP</label>
-                  <input
-                    type="url"
-                    required
-                    value={form.erp_base_url}
-                    onChange={e => setForm({ ...form, erp_base_url: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700">
-                    Cabecera x-api-key {form.tiene_erp_api_key ? `(Actual: ${form.erp_api_key_masked})` : '(Sin clave configurada)'}
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="Dejar en blanco para conservar la clave actual"
-                    value={erpApiKeyNueva}
-                    onChange={e => setErpApiKeyNueva(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-700">Intervalo automático (min)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={60}
-                      value={form.sync_interval_minutos}
-                      onChange={e => setForm({ ...form, sync_interval_minutos: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 tabular-nums focus:border-teal-600 focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={probarConexion}
-                      disabled={probando}
-                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                    >
-                      <Wifi className="h-4 w-4 text-teal-700" />
-                      <span>{probando ? 'Probando...' : 'Probar Conexión'}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Tiempos de Entrega por Proveedor */}
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-6 flex flex-col justify-between">
-              <div>
+          {/* Tarjeta de Plazos de Entrega por Laboratorio Proveedor */}
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="max-w-2xl">
                 <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <Truck className="h-4 w-4 text-teal-700" />
                   Plazos de Entrega por Laboratorio Proveedor
                 </h2>
-                <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                  El sistema ya no aplica una tolerancia global fija. Ahora los tiempos acordados de abastecimiento se configuran de forma independiente por cada proveedor en el apartado <strong>Plazos de Proveedores</strong> (por defecto 3 días), modificables libremente por los operadores logísticos.
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+                  Los tiempos acordados de abastecimiento se configuran de forma independiente por cada proveedor en el catálogo de laboratorios (por defecto 3 días), modificables por el personal operativo. Si una orden de compra supera el plazo pactado, el sistema genera la alerta automática para el reclamo logístico.
                 </p>
                 <div className="mt-3 rounded-lg border border-teal-100 bg-teal-50/60 p-3 text-xs text-slate-700">
                   <span className="font-semibold text-teal-900">Alerta de reclamo automático: </span>
-                  Si una orden de compra supera el plazo de entrega pactado con su respectivo laboratorio, se genera la alerta para el reclamo logístico inmediato.
+                  La auditoría evalúa en tiempo real cada recepción frente al plazo pactado de su laboratorio correspondiente.
                 </div>
               </div>
 
-              <div className="mt-5">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={forzarResyncBootstrap}
+                  disabled={resyncando}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
+                >
+                  <RefreshCw className={`h-4 w-4 ${resyncando ? 'animate-spin' : ''}`} />
+                  <span>{resyncando ? 'Reconstruyendo espejo...' : 'Re-sincronización completa (Bootstrap)'}</span>
+                </button>
+
                 <Link
                   to="/proveedores"
                   className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-teal-800 transition"
@@ -210,28 +105,7 @@ export default function ConfiguracionPage() {
                 </Link>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 lg:col-span-12">
-              <button
-                type="button"
-                onClick={forzarResyncBootstrap}
-                disabled={resyncando}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
-              >
-                <RefreshCw className={`h-4 w-4 ${resyncando ? 'animate-spin' : ''}`} />
-                <span>{resyncando ? 'Reconstruyendo espejo...' : 'Re-sincronización completa (Bootstrap)'}</span>
-              </button>
-
-              <button
-                type="submit"
-                disabled={guardando}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-5 py-2 text-xs font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" />
-                <span>{guardando ? 'Guardando...' : 'Guardar configuración'}</span>
-              </button>
-            </div>
-          </form>
+          </div>
 
           {/* Historial de ejecuciones de sincronización */}
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

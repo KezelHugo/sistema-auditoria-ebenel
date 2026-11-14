@@ -7,7 +7,7 @@ module.exports = {
   jwtSecret: (process.env.JWT_SECRET || 'ebenel-auditoria-jwt-secret-desarrollo-2026').trim(),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '12h',
   erpBaseUrl: (process.env.ERP_API_BASE_URL || 'https://simulador-erp-ebenel.onrender.com').replace(/\/+$/, ''),
-  erpApiKey: (process.env.ERP_API_KEY || '').trim(),
+  erpApiKey: (process.env.ERP_API_KEY || 'ebenel_erp_secret_key_2026').trim(),
   corsOrigin: (process.env.CORS_ORIGIN || '*').trim(),
   seedGerenciaEmail: (process.env.SEED_GERENCIA_EMAIL || 'gerencia@ebenel.com.pe').trim().toLowerCase(),
   seedGerenciaPassword: process.env.SEED_GERENCIA_PASSWORD || 'admin123',

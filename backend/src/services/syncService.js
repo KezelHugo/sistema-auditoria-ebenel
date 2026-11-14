@@ -11,7 +11,12 @@ function isSyncRunning() {
 
 async function obtenerConfigSistema(runner = db) {
   const { rows } = await runner.query('SELECT * FROM configuracion_sistema WHERE id = 1');
-  return rows[0];
+  const cfg = rows[0] || {};
+  return {
+    ...cfg,
+    erp_base_url: (cfg.erp_base_url || env.erpBaseUrl || 'https://simulador-erp-ebenel.onrender.com').replace(/\/+$/, ''),
+    erp_api_key: (cfg.erp_api_key || env.erpApiKey || 'ebenel_erp_secret_key_2026').trim()
+  };
 }
 
 async function upsertLaboratorios(client, labs = []) {

@@ -39,7 +39,7 @@ async function inicializarBaseDatos() {
   }
 
   // Asegurar configuración única id = 1
-  const { rows: cfgRows } = await db.query('SELECT id FROM configuracion_sistema WHERE id = 1');
+  const { rows: cfgRows } = await db.query('SELECT id, erp_api_key FROM configuracion_sistema WHERE id = 1');
   if (cfgRows.length === 0) {
     await db.query(
       `INSERT INTO configuracion_sistema (
@@ -49,6 +49,8 @@ async function inicializarBaseDatos() {
        ) VALUES ($1, $2, $3, 5, 0.00, 0, 20.00, 6.25, 8.00, 400)`,
       [1, env.erpBaseUrl, env.erpApiKey]
     );
+  } else if (!cfgRows[0].erp_api_key && env.erpApiKey) {
+    await db.query('UPDATE configuracion_sistema SET erp_api_key = $1 WHERE id = 1', [env.erpApiKey]);
   }
 
   // Sembrar cuentas iniciales únicamente cuando la tabla está vacía
