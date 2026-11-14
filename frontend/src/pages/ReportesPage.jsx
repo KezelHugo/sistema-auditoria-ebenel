@@ -27,7 +27,8 @@ export default function ReportesPage() {
   const [definicionAbierta, setDefinicionAbierta] = useState({
     capital: false,
     cumplimiento: false,
-    faltantes: false
+    faltantes: false,
+    grafico: true
   });
 
   const toggleDefinicion = (clave) => {
@@ -261,9 +262,25 @@ export default function ReportesPage() {
 
           {/* Gráfico de Evolución Mensual */}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4">
-              <h2 className="text-sm font-semibold text-slate-900">Evolución Mensual de Capital Inmovilizado vs. Liberado</h2>
-              <p className="text-xs text-slate-500">Seguimiento en soles (PEN) por mes de emisión de Órdenes de Compra</p>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Evolución Mensual de Capital Inmovilizado vs. Liberado</h2>
+                <p className="text-xs text-slate-500">Seguimiento en soles (PEN) por mes de emisión de Órdenes de Compra</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => toggleDefinicion('grafico')}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition ${
+                  definicionAbierta.grafico
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+                title="Ver significado de cada métrica del gráfico"
+              >
+                <HelpCircle className="h-3 w-3" />
+                <span>{definicionAbierta.grafico ? 'Ocultar significado' : '¿Qué significa cada valor?'}</span>
+              </button>
             </div>
 
             <div className="h-72 w-full">
@@ -289,6 +306,44 @@ export default function ReportesPage() {
                 </ResponsiveContainer>
               )}
             </div>
+
+            {/* Guía explicativa de cada métrica del gráfico */}
+            {definicionAbierta.grafico && (
+              <div className="mt-4 grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 md:grid-cols-3">
+                {/* Capital Inmovilizado */}
+                <div className="rounded-lg border border-rose-100 bg-rose-50/60 p-3 text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-rose-900">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-700" />
+                    <span>Capital Inmovilizado</span>
+                  </div>
+                  <p className="mt-1 text-slate-600 leading-relaxed">
+                    Mercadería recibida pero retenida en almacén (zona de devolución) debido a sobreprecios facturados por los laboratorios que exceden lo pactado en la OC.
+                  </p>
+                </div>
+
+                {/* Capital Liberado */}
+                <div className="rounded-lg border border-teal-100 bg-teal-50/60 p-3 text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-teal-900">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-teal-700" />
+                    <span>Capital Liberado</span>
+                  </div>
+                  <p className="mt-1 text-slate-600 leading-relaxed">
+                    Valor monetario desbloqueado e ingresado al inventario comercial disponible para la venta tras acuerdos o emisión de Notas de Crédito con el proveedor.
+                  </p>
+                </div>
+
+                {/* Valor Faltantes */}
+                <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3 text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-amber-900">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-600" />
+                    <span>Valor Faltantes</span>
+                  </div>
+                  <p className="mt-1 text-slate-600 leading-relaxed">
+                    Monto en soles de unidades farmacéuticas no entregadas por los laboratorios en la recepción física, que representan riesgo de desabastecimiento comercial.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tabla detallada por laboratorio */}
