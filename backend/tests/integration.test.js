@@ -295,18 +295,37 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
   assert.equal(incList.data.data.length, 1);
   const incId = incList.data.data[0].id;
 
+  // 6.a-1 EMPLEADO gestiona producto inmovilizado: marca como Pendiente de Recojo con fecha programada
+  const patchRecojo = await apiFetch(apiUrl, `/api/incidencias/${incId}`, {
+    method: 'PATCH',
+    token: tokenEmp,
+    body: {
+      estado_gestion: 'PENDIENTE_RECOJO',
+      fecha_programada_recojo: '2026-11-20',
+      recordatorio_nota: 'Courier del laboratorio confirmado para recoger cajas en zona de devolución.'
+    }
+  });
+  assert.equal(patchRecojo.status, 200);
+  assert.equal(patchRecojo.data.data.estado_gestion, 'PENDIENTE_RECOJO');
+  assert.equal(Number(patchRecojo.data.data.monto_liberado), 0);
+  assert.ok(patchRecojo.data.data.fecha_compromiso_entrega);
+
+  // Sigue apareciendo en ACTIVAS
+  const activasRes = await apiFetch(apiUrl, '/api/incidencias?estado=ACTIVAS', { token: tokenEmp });
+  assert.ok(activasRes.data.data.some(i => i.id === incId));
+
+  // 6.a-2 Laboratorio recoge mercadería: se marca como DEVUELTO con Guía de Remisión y se libera capital
   const patchInc = await apiFetch(apiUrl, `/api/incidencias/${incId}`, {
     method: 'PATCH',
     token: tokenEmp,
     body: {
-      estado_gestion: 'RESUELTA_CAPITAL_LIBERADO',
+      estado_gestion: 'DEVUELTO',
       documento_respaldo: 'NC-F001-00421',
-      monto_liberado: 1200,
-      observaciones_gestion: 'Nota de crédito emitida por laboratorio y stock liberado a almacén.'
+      observaciones_gestion: 'Bultos retirados por courier del laboratorio con guía de remisión de devolución.'
     }
   });
   assert.equal(patchInc.status, 200);
-  assert.equal(patchInc.data.data.estado_gestion, 'RESUELTA_CAPITAL_LIBERADO');
+  assert.equal(patchInc.data.data.estado_gestion, 'DEVUELTO');
   assert.equal(Number(patchInc.data.data.monto_liberado), 1200);
 
   // 6.b EMPLEADO gestiona faltantes por partes con recordatorio variable y cálculo automático

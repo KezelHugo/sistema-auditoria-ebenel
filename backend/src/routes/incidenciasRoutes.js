@@ -8,6 +8,9 @@ const router = express.Router();
 const ESTADOS_GESTION_VALIDOS = [
   'ABIERTA',
   'EN_GESTION',
+  'PENDIENTE_RECOJO',
+  'DEVUELTO',
+  'CERRADA_ACEPTADA',
   'RESUELTA_CAPITAL_LIBERADO',
   'CERRADA_SIN_RECUPERACION'
 ];
@@ -28,7 +31,9 @@ router.get('/', autenticarJWT, async (req, res, next) => {
     }
     if (estado && estado !== 'TODOS') {
       if (estado === 'ACTIVAS') {
-        filtradas = filtradas.filter(i => i.estado_gestion === 'ABIERTA' || i.estado_gestion === 'EN_GESTION');
+        filtradas = filtradas.filter(i => ['ABIERTA', 'EN_GESTION', 'PENDIENTE_RECOJO'].includes(i.estado_gestion));
+      } else if (estado === 'RESUELTAS') {
+        filtradas = filtradas.filter(i => ['RESUELTA_CAPITAL_LIBERADO', 'DEVUELTO', 'CERRADA_ACEPTADA', 'CERRADA_SIN_RECUPERACION'].includes(i.estado_gestion));
       } else {
         filtradas = filtradas.filter(i => i.estado_gestion === estado);
       }
@@ -48,7 +53,7 @@ router.get('/', autenticarJWT, async (req, res, next) => {
 
     const resumenTipos = {
       total: rows.length,
-      activas: rows.filter(i => i.estado_gestion === 'ABIERTA' || i.estado_gestion === 'EN_GESTION').length,
+      activas: rows.filter(i => ['ABIERTA', 'EN_GESTION', 'PENDIENTE_RECOJO'].includes(i.estado_gestion)).length,
       ENTREGA_INCOMPLETA: rows.filter(i => i.tipo_incidencia === 'ENTREGA_INCOMPLETA').length,
       PRODUCTO_INMOVILIZADO_PRECIO: rows.filter(i => i.tipo_incidencia === 'PRODUCTO_INMOVILIZADO_PRECIO').length,
       RETRASO_ENTREGA: rows.filter(i => i.tipo_incidencia === 'RETRASO_ENTREGA').length
@@ -95,13 +100,23 @@ router.patch('/:id', autenticarJWT, async (req, res, next) => {
       ? Number(req.body.monto_liberado)
       : Number(actual.monto_liberado || 0);
 
-    // Si no se proporcionó monto_liberado explícito, calcularlo automáticamente a partir de las unidades regularizadas
-    if (req.body?.monto_liberado === undefined && req.body?.cantidad_regularizada !== undefined) {
-      if (actual.tipo_incidencia === 'ENTREGA_INCOMPLETA') {
+    // Si no se proporcionó monto_liberado explícito, calcularlo automáticamente según el tipo de incidencia
+    if (actual.tipo_incidencia === 'PRODUCTO_INMOVILIZADO_PRECIO') {
+      if (estadoNuevo === 'CERRADA_ACEPTADA' || estadoNuevo === 'DEVUELTO') {
+        // Al aceptarse el sobreprecio (se libera a stock) o al confirmarse la devolución física al proveedor,
+        // se regulariza/libera el 100% del valor afectado si no se indicó monto parcial.
+        if (req.body?.monto_liberado === undefined || montoRaw <= 0) {
+          montoRaw = Number(actual.valor_economico_afectado || 0);
+        }
+      } else if (estadoNuevo === 'PENDIENTE_RECOJO' || estadoNuevo === 'ABIERTA' || estadoNuevo === 'EN_GESTION') {
+        // Mientras esté pendiente de recojo en almacén o en gestión, el capital sigue retenido
+        if (req.body?.monto_liberado === undefined) {
+          montoRaw = 0;
+        }
+      }
+    } else if (actual.tipo_incidencia === 'ENTREGA_INCOMPLETA') {
+      if (req.body?.monto_liberado === undefined && req.body?.cantidad_regularizada !== undefined) {
         const precioUnit = Number(actual.precio_pactado || 0);
-        montoRaw = Number((cantidadRegularizada * precioUnit).toFixed(2));
-      } else if (actual.tipo_incidencia === 'PRODUCTO_INMOVILIZADO_PRECIO') {
-        const precioUnit = Number(actual.precio_facturado || actual.precio_pactado || 0);
         montoRaw = Number((cantidadRegularizada * precioUnit).toFixed(2));
       }
     }
@@ -117,13 +132,17 @@ router.patch('/:id', autenticarJWT, async (req, res, next) => {
       ? String(req.body.observaciones_gestion || '').trim()
       : actual.observaciones_gestion;
 
-    // Manejo de fecha de compromiso de entrega y recordatorio variable
+    // Manejo de fecha de compromiso de entrega / recojo y recordatorio variable
+    const fechaEntrada = req.body?.fecha_programada_recojo !== undefined
+      ? req.body.fecha_programada_recojo
+      : req.body?.fecha_compromiso_entrega;
+
     let fechaCompromiso = actual.fecha_compromiso_entrega;
-    if (req.body?.fecha_compromiso_entrega !== undefined) {
-      if (req.body.fecha_compromiso_entrega === null || req.body.fecha_compromiso_entrega === '') {
+    if (fechaEntrada !== undefined) {
+      if (fechaEntrada === null || fechaEntrada === '') {
         fechaCompromiso = null;
       } else {
-        const d = new Date(req.body.fecha_compromiso_entrega);
+        const d = new Date(fechaEntrada);
         if (!Number.isNaN(d.getTime())) {
           fechaCompromiso = d;
         }
@@ -134,7 +153,7 @@ router.patch('/:id', autenticarJWT, async (req, res, next) => {
       ? String(req.body.recordatorio_nota || '').trim()
       : actual.recordatorio_nota;
 
-    const esResuelta = estadoNuevo === 'RESUELTA_CAPITAL_LIBERADO' || estadoNuevo === 'CERRADA_SIN_RECUPERACION';
+    const esResuelta = ['RESUELTA_CAPITAL_LIBERADO', 'DEVUELTO', 'CERRADA_ACEPTADA', 'CERRADA_SIN_RECUPERACION'].includes(estadoNuevo);
     const resueltaEn = esResuelta ? (actual.resuelta_en || new Date()) : null;
 
     if (estadoNuevo === 'RESUELTA_CAPITAL_LIBERADO' && actual.tipo_incidencia === 'PRODUCTO_INMOVILIZADO_PRECIO' && montoRaw <= 0) {

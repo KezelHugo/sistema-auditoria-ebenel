@@ -76,6 +76,18 @@ export const ESTADO_GESTION_META = {
     etiqueta: 'En Gestión',
     badge: 'bg-amber-50 text-amber-700 border-amber-200'
   },
+  PENDIENTE_RECOJO: {
+    etiqueta: 'Pendiente de Recojo',
+    badge: 'bg-orange-50 text-orange-700 border-orange-200'
+  },
+  DEVUELTO: {
+    etiqueta: 'Devuelto al Proveedor',
+    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  },
+  CERRADA_ACEPTADA: {
+    etiqueta: 'Sobreprecio Aceptado',
+    badge: 'bg-teal-50 text-teal-700 border-teal-200'
+  },
   RESUELTA_CAPITAL_LIBERADO: {
     etiqueta: 'Resuelta / Liberada',
     badge: 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -111,7 +123,7 @@ export const SEVERIDAD_BADGE = {
   BAJA: 'bg-slate-100 text-slate-700 border-slate-200'
 };
 
-export function obtenerEstadoCompromiso(fechaIso) {
+export function obtenerEstadoCompromiso(fechaIso, tipoIncidencia = null) {
   if (!fechaIso) return null;
   const d = new Date(fechaIso);
   if (Number.isNaN(d.getTime())) return null;
@@ -121,25 +133,33 @@ export function obtenerEstadoCompromiso(fechaIso) {
   const fechaObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diffDias = Math.round((fechaObj.getTime() - fechaHoy.getTime()) / (1000 * 60 * 60 * 24));
 
+  const esRecojo = tipoIncidencia === 'PRODUCTO_INMOVILIZADO_PRECIO';
+
   if (diffDias < 0) {
     const diasVencidos = Math.abs(diffDias);
     return {
       estado: 'VENCIDO',
-      texto: `Compromiso vencido hace ${diasVencidos} d`,
+      texto: esRecojo
+        ? `Recojo demorado hace ${diasVencidos} d`
+        : `Compromiso vencido hace ${diasVencidos} d`,
       dias: diffDias,
       badge: 'bg-rose-100 text-rose-800 border-rose-300 font-medium'
     };
   } else if (diffDias === 0) {
     return {
       estado: 'HOY',
-      texto: 'Compromiso vence hoy',
+      texto: esRecojo
+        ? 'Recojo programado para hoy'
+        : 'Compromiso vence hoy',
       dias: 0,
       badge: 'bg-amber-100 text-amber-800 border-amber-300 font-semibold animate-pulse'
     };
   } else {
     return {
       estado: 'PENDIENTE',
-      texto: `Entrega pactada para ${formatearFechaCortaLima(fechaIso)} (en ${diffDias} d)`,
+      texto: esRecojo
+        ? `Recojo programado para ${formatearFechaCortaLima(fechaIso)} (en ${diffDias} d)`
+        : `Entrega pactada para ${formatearFechaCortaLima(fechaIso)} (en ${diffDias} d)`,
       dias: diffDias,
       badge: 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
     };

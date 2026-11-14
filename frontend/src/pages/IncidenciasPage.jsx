@@ -168,10 +168,13 @@ export default function IncidenciasPage() {
             onChange={e => cambiarEstado(e.target.value)}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none"
           >
-            <option value="ACTIVAS">Pendientes / En Gestión ({resumen.activas ?? 0})</option>
+            <option value="ACTIVAS">Pendientes y En Gestión ({resumen.activas ?? 0})</option>
             <option value="TODOS">Todos los estados</option>
             <option value="ABIERTA">Solo Abiertas</option>
             <option value="EN_GESTION">Solo En Gestión</option>
+            <option value="PENDIENTE_RECOJO">Pendiente de Recojo (Proveedor)</option>
+            <option value="DEVUELTO">Devuelto al Proveedor</option>
+            <option value="CERRADA_ACEPTADA">Sobreprecio Aceptado</option>
             <option value="RESUELTA_CAPITAL_LIBERADO">Resueltas / Liberadas</option>
             <option value="CERRADA_SIN_RECUPERACION">Cerradas sin Recuperación</option>
           </select>
@@ -211,7 +214,7 @@ export default function IncidenciasPage() {
                   const eMeta = ESTADO_GESTION_META[inc.estado_gestion] || {};
                   const sevBadge = SEVERIDAD_BADGE[inc.severidad] || SEVERIDAD_BADGE.MEDIA;
                   const compromiso = inc.fecha_compromiso_entrega
-                    ? obtenerEstadoCompromiso(inc.fecha_compromiso_entrega)
+                    ? obtenerEstadoCompromiso(inc.fecha_compromiso_entrega, inc.tipo_incidencia)
                     : null;
                   return (
                     <tr key={inc.id} className="hover:bg-slate-50/70">
@@ -263,7 +266,7 @@ export default function IncidenciasPage() {
                         )}
                         {inc.recordatorio_nota && (
                           <p className="mt-1 text-[11px] italic text-slate-600">
-                            Compromiso: "{inc.recordatorio_nota}"
+                            {inc.tipo_incidencia === 'PRODUCTO_INMOVILIZADO_PRECIO' ? 'Recojo: ' : 'Compromiso: '} "{inc.recordatorio_nota}"
                           </p>
                         )}
                         {inc.observaciones_gestion && (

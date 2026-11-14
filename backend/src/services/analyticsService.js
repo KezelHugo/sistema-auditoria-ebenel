@@ -149,13 +149,13 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
     const lib = Number(inc.monto_liberado || 0);
 
     if (inc.estado_gestion === 'ABIERTA') incidenciasAbiertas++;
-    else if (inc.estado_gestion === 'EN_GESTION') incidenciasEnGestion++;
+    else if (inc.estado_gestion === 'EN_GESTION' || inc.estado_gestion === 'PENDIENTE_RECOJO') incidenciasEnGestion++;
     else incidenciasResueltas++;
 
     const cat = categoriasPareto[inc.tipo_incidencia];
     if (cat) {
       cat.cantidad++;
-      if (inc.estado_gestion === 'ABIERTA' || inc.estado_gestion === 'EN_GESTION') cat.abiertas++;
+      if (['ABIERTA', 'EN_GESTION', 'PENDIENTE_RECOJO'].includes(inc.estado_gestion)) cat.abiertas++;
       else cat.resueltas++;
       cat.valor_afectado = Number((cat.valor_afectado + val).toFixed(2));
       cat.valor_liberado = Number((cat.valor_liberado + lib).toFixed(2));
@@ -238,7 +238,7 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
   const despachosBase = Number(cfg.despachos_mensuales_base || 400);
   const ocsConFallaActivaSinResolver = new Set(
     incidenciasFiltradas
-      .filter(i => i.estado_gestion === 'ABIERTA' || i.estado_gestion === 'EN_GESTION')
+      .filter(i => ['ABIERTA', 'EN_GESTION', 'PENDIENTE_RECOJO'].includes(i.estado_gestion))
       .map(i => i.orden_compra_id)
   ).size;
   const proporcionFallaActiva = ordenesFiltradas.length > 0 ? ocsConFallaActivaSinResolver / ordenesFiltradas.length : 0;
@@ -261,7 +261,7 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
     .sort((a, b) => a.mes.localeCompare(b.mes));
 
   const incidenciasActivas = incidenciasFiltradas.filter(
-    i => i.estado_gestion === 'ABIERTA' || i.estado_gestion === 'EN_GESTION'
+    i => ['ABIERTA', 'EN_GESTION', 'PENDIENTE_RECOJO'].includes(i.estado_gestion)
   );
 
   return {

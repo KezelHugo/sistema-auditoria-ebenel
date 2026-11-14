@@ -488,7 +488,7 @@ export default function DashboardPage() {
                         const tMeta = TIPO_INCIDENCIA_META[inc.tipo_incidencia] || {};
                         const eMeta = ESTADO_GESTION_META[inc.estado_gestion] || {};
                         const compromiso = inc.fecha_compromiso_entrega
-                          ? obtenerEstadoCompromiso(inc.fecha_compromiso_entrega)
+                          ? obtenerEstadoCompromiso(inc.fecha_compromiso_entrega, inc.tipo_incidencia)
                           : null;
                         return (
                           <tr key={inc.id} className="hover:bg-slate-50/70">
