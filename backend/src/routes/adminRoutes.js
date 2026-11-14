@@ -540,12 +540,17 @@ router.get('/auditoria', async (req, res, next) => {
 
 router.get('/sync-logs', async (req, res, next) => {
   try {
-    const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 100);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 200, 1), 500);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+    const { rows: countRows } = await db.query('SELECT COUNT(*)::int AS total FROM sync_logs');
+    const total = countRows[0]?.total || 0;
+
     const { rows } = await db.query(
-      'SELECT * FROM sync_logs ORDER BY ejecutado_en DESC, id DESC LIMIT $1',
-      [limit]
+      'SELECT * FROM sync_logs ORDER BY ejecutado_en DESC, id DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
     );
-    res.json({ total: rows.length, data: rows });
+    res.json({ total, data: rows, limit, offset });
   } catch (err) {
     next(err);
   }

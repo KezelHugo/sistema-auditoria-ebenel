@@ -7,7 +7,7 @@ import {
   BarChart3,
   Users,
   ShieldCheck,
-  Settings,
+  History,
   LogOut,
   X,
   KeyRound,
@@ -29,7 +29,7 @@ const NAV_OPERACION = [
 const NAV_ADMIN = [
   { to: '/admin/trabajadores', label: 'Gestión de Personal', icon: Users },
   { to: '/admin/auditoria', label: 'Auditoría del Sistema', icon: ShieldCheck },
-  { to: '/admin/configuracion', label: 'Configuración ERP', icon: Settings }
+  { to: '/admin/configuracion', label: 'Historial de Sincronización', icon: History }
 ];
 
 const TITULOS_RUTA = {
@@ -40,7 +40,7 @@ const TITULOS_RUTA = {
   '/reportes': 'Reportes de Rentabilidad y Cumplimiento Logístico',
   '/admin/trabajadores': 'Administración de Trabajadores y Accesos',
   '/admin/auditoria': 'Registro de Auditoría e Inmutabilidad del Sistema',
-  '/admin/configuracion': 'Configuración del Motor ERP'
+  '/admin/configuracion': 'Historial de Sincronizaciones con el ERP'
 };
 
 function PasswordModal({ onClose }) {
