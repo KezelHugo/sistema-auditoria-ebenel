@@ -79,22 +79,39 @@ export default function DashboardPage() {
   const topLabs = (data?.ranking_laboratorios || []).slice(0, 5);
 
   const desgloseOcs = resInc.desglose_ocs_afectadas || {};
-  const totalOcsConFallas = desgloseOcs.total_ocs_con_incidencias ?? ((resAbast.ocs_con_incidencias || 0) + (resAbast.ocs_vencidas_sin_entrega || 0));
+  const totalOcsConFallas = desgloseOcs.total_ocs_activas ?? desgloseOcs.total_ocs_con_incidencias ?? ((resAbast.ocs_con_incidencias || 0) + (resAbast.ocs_vencidas_sin_entrega || 0));
   const activasTotal = (resInc.abiertas || 0) + (resInc.en_gestion || 0);
 
   const catFaltantes = pareto.find(p => p.tipo === 'ENTREGA_INCOMPLETA') || {};
   const catRetencion = pareto.find(p => p.tipo === 'PRODUCTO_INMOVILIZADO_PRECIO') || {};
   const catRetraso = pareto.find(p => p.tipo === 'RETRASO_ENTREGA') || {};
 
-  // Distribución de causas calculada estrictamente sobre incidencias activas
-  const totalActivasPareto = pareto.reduce((acc, it) => acc + Number(it.abiertas || 0), 0);
+  const ocsFaltantes = desgloseOcs.por_faltantes_activas ?? desgloseOcs.por_faltantes ?? (catFaltantes.ocs_activas ?? catFaltantes.ocs ?? 0);
+  const ocsRetencion = desgloseOcs.por_retencion_precio_activas ?? desgloseOcs.por_retencion_precio ?? (catRetencion.ocs_activas ?? catRetencion.ocs ?? 0);
+  const ocsRetraso = desgloseOcs.por_retraso_activas ?? desgloseOcs.por_retraso ?? (catRetraso.ocs_activas ?? catRetraso.ocs ?? 0);
+
+  // Distribución de causas calculada estrictamente sobre Órdenes de Compra únicas afectadas (Pareto 80/20)
+  const ocsPorCausaMap = {
+    ENTREGA_INCOMPLETA: ocsFaltantes,
+    PRODUCTO_INMOVILIZADO_PRECIO: ocsRetencion,
+    RETRASO_ENTREGA: ocsRetraso
+  };
+  const totalOcsPareto = Object.values(ocsPorCausaMap).reduce((a, b) => a + Number(b || 0), 0) || totalOcsConFallas || 1;
+
   const paretoActivas = pareto.map(it => {
-    const act = Number(it.abiertas || 0);
-    const pct = totalActivasPareto > 0 ? Number(((act / totalActivasPareto) * 100).toFixed(1)) : 0;
+    const ocsCausa = ocsPorCausaMap[it.tipo] ?? (it.ocs_activas ?? it.ocs ?? 0);
+    const pctOcs = totalOcsPareto > 0 ? Number(((ocsCausa / totalOcsPareto) * 100).toFixed(1)) : 0;
+    const itemsCount = Number(it.abiertas ?? it.cantidad ?? 0);
+    const unidadTexto = it.tipo === 'RETRASO_ENTREGA'
+      ? (itemsCount === 1 ? '1 alerta' : `${itemsCount} alertas`)
+      : (itemsCount === 1 ? '1 ítem' : `${itemsCount} ítems`);
+
     return {
       ...it,
-      activas: act,
-      porcentajeActivas: pct,
+      ocs: ocsCausa,
+      porcentajeOcs: pctOcs,
+      itemsTexto: unidadTexto,
+      itemsCount,
       nombreCorto: TIPO_INCIDENCIA_META[it.tipo]?.corto || it.tipo,
       etiqueta: TIPO_INCIDENCIA_META[it.tipo]?.etiqueta || it.tipo
     };
@@ -183,7 +200,7 @@ export default function DashboardPage() {
                   Órdenes con Incidencias
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className={`rounded-lg p-2 transition ${activasTotal > 0 ? 'bg-rose-50 text-rose-700 group-hover:bg-rose-100' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`rounded-lg p-2 transition ${totalOcsConFallas > 0 ? 'bg-rose-50 text-rose-700 group-hover:bg-rose-100' : 'bg-slate-100 text-slate-600'}`}>
                     <AlertTriangle className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-rose-600 transition" />
@@ -191,14 +208,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {activasTotal}
+                  {totalOcsConFallas}
                 </span>
-                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${activasTotal > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                  {activasTotal === 1 ? '1 activa' : `${activasTotal} activas`}
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${totalOcsConFallas > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {totalOcsConFallas === 1 ? '1 activa' : `${totalOcsConFallas} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                Total: {resInc.total_incidencias || 0} ({totalOcsConFallas} OCs) • <span className="font-medium text-emerald-700">{resInc.resueltas || 0} resueltas</span>
+                {activasTotal} {activasTotal === 1 ? 'ítem observado' : 'ítems observados'} • <span className="font-medium text-emerald-700">{resInc.resueltas || 0} resueltas</span>
               </p>
             </Link>
 
@@ -212,7 +229,7 @@ export default function DashboardPage() {
                   Órdenes con Faltantes
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className={`rounded-lg p-2 transition ${(catFaltantes.abiertas || 0) > 0 ? 'bg-amber-50 text-amber-700 group-hover:bg-amber-100' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`rounded-lg p-2 transition ${ocsFaltantes > 0 ? 'bg-amber-50 text-amber-700 group-hover:bg-amber-100' : 'bg-slate-100 text-slate-600'}`}>
                     <PackageX className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-amber-600 transition" />
@@ -220,14 +237,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {catFaltantes.abiertas || 0}
+                  {ocsFaltantes}
                 </span>
-                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${(catFaltantes.abiertas || 0) > 0 ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                  {(catFaltantes.abiertas || 0) === 1 ? '1 activa' : `${catFaltantes.abiertas || 0} activas`}
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${ocsFaltantes > 0 ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {ocsFaltantes === 1 ? '1 activa' : `${ocsFaltantes} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                Total: {catFaltantes.cantidad || 0} ({desgloseOcs.por_faltantes ?? 0} OCs) • <span className="font-medium text-emerald-700">{catFaltantes.resueltas || 0} resueltas</span>
+                {catFaltantes.abiertas ?? catFaltantes.cantidad ?? 0} ítems • <span className="font-medium text-emerald-700">{catFaltantes.resueltas || 0} resueltas</span>
               </p>
             </Link>
 
@@ -241,7 +258,7 @@ export default function DashboardPage() {
                   Órdenes con Retención
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className={`rounded-lg p-2 transition ${(catRetencion.abiertas || 0) > 0 ? 'bg-rose-50 text-rose-700 group-hover:bg-rose-100' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`rounded-lg p-2 transition ${ocsRetencion > 0 ? 'bg-rose-50 text-rose-700 group-hover:bg-rose-100' : 'bg-slate-100 text-slate-600'}`}>
                     <ShieldAlert className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-rose-600 transition" />
@@ -249,14 +266,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {catRetencion.abiertas || 0}
+                  {ocsRetencion}
                 </span>
-                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${(catRetencion.abiertas || 0) > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                  {(catRetencion.abiertas || 0) === 1 ? '1 activa' : `${catRetencion.abiertas || 0} activas`}
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${ocsRetencion > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {ocsRetencion === 1 ? '1 activa' : `${ocsRetencion} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                Total: {catRetencion.cantidad || 0} ({desgloseOcs.por_retencion_precio ?? 0} OCs) • <span className="font-medium text-emerald-700">{catRetencion.resueltas || 0} resueltas</span>
+                {catRetencion.abiertas ?? catRetencion.cantidad ?? 0} ítems • <span className="font-medium text-emerald-700">{catRetencion.resueltas || 0} resueltas</span>
               </p>
             </Link>
 
@@ -270,7 +287,7 @@ export default function DashboardPage() {
                   Órdenes con Retraso
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <div className={`rounded-lg p-2 transition ${(catRetraso.abiertas || 0) > 0 ? 'bg-orange-50 text-orange-700 group-hover:bg-orange-100' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`rounded-lg p-2 transition ${ocsRetraso > 0 ? 'bg-orange-50 text-orange-700 group-hover:bg-orange-100' : 'bg-slate-100 text-slate-600'}`}>
                     <Clock className="h-4 w-4" />
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-orange-600 transition" />
@@ -278,14 +295,14 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {catRetraso.abiertas || 0}
+                  {ocsRetraso}
                 </span>
-                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${(catRetraso.abiertas || 0) > 0 ? 'border-orange-200 bg-orange-50 text-orange-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                  {(catRetraso.abiertas || 0) === 1 ? '1 activa' : `${catRetraso.abiertas || 0} activas`}
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${ocsRetraso > 0 ? 'border-orange-200 bg-orange-50 text-orange-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                  {ocsRetraso === 1 ? '1 activa' : `${ocsRetraso} activas`}
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-500 tabular-nums">
-                Total: {catRetraso.cantidad || 0} ({desgloseOcs.por_retraso ?? 0} OCs) • <span className="font-medium text-emerald-700">{catRetraso.resueltas || 0} resueltas</span>
+                {(catRetraso.abiertas ?? catRetraso.cantidad ?? 0) === 1 ? '1 alerta' : `${catRetraso.abiertas ?? catRetraso.cantidad ?? 0} alertas`} • <span className="font-medium text-emerald-700">{catRetraso.resueltas || 0} resueltas</span>
               </p>
             </Link>
           </div>
@@ -297,7 +314,7 @@ export default function DashboardPage() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Distribución de Incidencias Activas por Causa</h2>
-                  <p className="text-xs text-slate-500">Proporción y volumen de anomalías pendientes de resolución ({totalActivasPareto} activas)</p>
+                  <p className="text-xs text-slate-500">Distribución Pareto sobre {totalOcsConFallas} Órdenes de Compra afectadas ({activasTotal} ítems/alertas)</p>
                 </div>
                 <Link
                   to="/incidencias"
@@ -308,7 +325,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="h-64 w-full">
-                {totalActivasPareto === 0 ? (
+                {totalOcsConFallas === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400">
                     <CheckCircle2 className="mb-2 h-7 w-7 text-emerald-600" />
                     <p className="text-sm font-semibold text-slate-800">Sin incidencias activas</p>
@@ -332,12 +349,12 @@ export default function DashboardPage() {
                           border: '1px solid #e2e8f0',
                           fontSize: '12px'
                         }}
-                        formatter={(value, _name, props) => [
-                          `${value} activa(s) (${props.payload.porcentajeActivas}% del total activo)`,
-                          'Pendientes'
+                        formatter={(_value, _name, props) => [
+                          `${props.payload.ocs} OCs (${props.payload.porcentajeOcs}%) • ${props.payload.itemsTexto}`,
+                          'Afectación'
                         ]}
                       />
-                      <Bar dataKey="activas" radius={[6, 6, 0, 0]} maxBarSize={56}>
+                      <Bar dataKey="ocs" radius={[6, 6, 0, 0]} maxBarSize={56}>
                         {paretoActivas.map(entry => (
                           <Cell key={entry.tipo} fill={COLORES_PARETO[entry.tipo] || '#0f766e'} />
                         ))}
@@ -355,9 +372,9 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-0.5 flex items-baseline justify-between">
                       <span className="text-sm font-semibold text-slate-900 tabular-nums">
-                        {item.activas} activas ({item.porcentajeActivas}%)
+                        {item.ocs} OCs ({item.porcentajeOcs}%)
                       </span>
-                      <span className="text-[11px] text-slate-500 tabular-nums">{item.resueltas} resueltas</span>
+                      <span className="text-[11px] text-slate-500 tabular-nums">{item.itemsTexto}</span>
                     </div>
                   </div>
                 ))}

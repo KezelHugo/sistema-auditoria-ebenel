@@ -186,7 +186,7 @@ test('Flujo completo: Bootstrap ERP, Conciliación, RBAC, Gestión Empleado, Rev
         numero_oc_referencia: 'OC-2026-0101',
         guia_remision: 'GR-001',
         factura_proveedor: 'F001-99',
-        fecha_recepcion_fisica: new Date(Date.now() - 1 * 86400000).toISOString(),
+        fecha_recepcion_fisica: new Date().toISOString(),
         responsable_almacen: 'Carlos M.',
         estado_recepcion_erp: 'INGRESADO_CON_OBSERVACION',
         total_capital_inmovilizado_erp: 1200,

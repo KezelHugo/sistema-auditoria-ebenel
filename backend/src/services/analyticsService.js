@@ -123,7 +123,13 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
   };
 
   const ocsConIncidenciasSet = new Set();
+  const ocsActivasSet = new Set();
   const ocsPorTipo = {
+    ENTREGA_INCOMPLETA: new Set(),
+    PRODUCTO_INMOVILIZADO_PRECIO: new Set(),
+    RETRASO_ENTREGA: new Set()
+  };
+  const ocsActivasPorTipo = {
     ENTREGA_INCOMPLETA: new Set(),
     PRODUCTO_INMOVILIZADO_PRECIO: new Set(),
     RETRASO_ENTREGA: new Set()
@@ -148,6 +154,14 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
     ocsConIncidenciasSet.add(inc.orden_compra_id);
     if (ocsPorTipo[inc.tipo_incidencia]) {
       ocsPorTipo[inc.tipo_incidencia].add(inc.orden_compra_id);
+    }
+
+    const esActiva = ['ABIERTA', 'EN_GESTION', 'PENDIENTE_RECOJO'].includes(inc.estado_gestion);
+    if (esActiva) {
+      ocsActivasSet.add(inc.orden_compra_id);
+      if (ocsActivasPorTipo[inc.tipo_incidencia]) {
+        ocsActivasPorTipo[inc.tipo_incidencia].add(inc.orden_compra_id);
+      }
     }
 
     const val = Number(inc.valor_economico_afectado || 0);
@@ -213,18 +227,31 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
     }
   }
 
-  // Ordenar Pareto descendentemente y calcular % acumulado
+  for (const tipo of Object.keys(categoriasPareto)) {
+    categoriasPareto[tipo].ocs_afectadas = ocsPorTipo[tipo] ? ocsPorTipo[tipo].size : 0;
+    categoriasPareto[tipo].ocs_activas = ocsActivasPorTipo[tipo] ? ocsActivasPorTipo[tipo].size : 0;
+  }
+
+  // Ordenar Pareto descendentemente por OCs afectadas (o por items si empate)
   const totalIncidencias = incidenciasFiltradas.length;
+  const totalOcsConIncidencias = ocsConIncidenciasSet.size;
   const paretoOrdenado = Object.values(categoriasPareto)
-    .sort((a, b) => b.cantidad - a.cantidad);
-  let acum = 0;
+    .sort((a, b) => b.ocs_afectadas - a.ocs_afectadas || b.cantidad - a.cantidad);
+  let acumItems = 0;
+  let acumOcs = 0;
   const pareto = paretoOrdenado.map(item => {
-    const pct = totalIncidencias > 0 ? Number(((item.cantidad / totalIncidencias) * 100).toFixed(2)) : 0;
-    acum = Number((acum + pct).toFixed(2));
+    const pctItems = totalIncidencias > 0 ? Number(((item.cantidad / totalIncidencias) * 100).toFixed(2)) : 0;
+    const pctOcs = totalOcsConIncidencias > 0 ? Number(((item.ocs_afectadas / totalOcsConIncidencias) * 100).toFixed(1)) : 0;
+    acumItems = Number((acumItems + pctItems).toFixed(2));
+    acumOcs = Number((acumOcs + pctOcs).toFixed(1));
     return {
       ...item,
-      porcentaje: pct,
-      acumulado_pct: Math.min(100, acum)
+      ocs: item.ocs_afectadas,
+      ocs_activas: item.ocs_activas,
+      porcentaje_ocs: pctOcs,
+      acumulado_ocs_pct: Math.min(100, acumOcs),
+      porcentaje: pctItems,
+      acumulado_pct: Math.min(100, acumItems)
     };
   });
 
@@ -315,11 +342,16 @@ async function obtenerAnalitica({ periodo = 'todo', ahora = new Date() } = {}) {
       en_gestion: incidenciasEnGestion,
       resueltas: incidenciasResueltas,
       total_ocs_con_incidencias: ocsConIncidenciasSet.size,
+      total_ocs_activas: ocsActivasSet.size,
       desglose_ocs_afectadas: {
         total_ocs_con_incidencias: ocsConIncidenciasSet.size,
+        total_ocs_activas: ocsActivasSet.size,
         por_faltantes: ocsPorTipo.ENTREGA_INCOMPLETA ? ocsPorTipo.ENTREGA_INCOMPLETA.size : 0,
+        por_faltantes_activas: ocsActivasPorTipo.ENTREGA_INCOMPLETA ? ocsActivasPorTipo.ENTREGA_INCOMPLETA.size : 0,
         por_retencion_precio: ocsPorTipo.PRODUCTO_INMOVILIZADO_PRECIO ? ocsPorTipo.PRODUCTO_INMOVILIZADO_PRECIO.size : 0,
-        por_retraso: ocsPorTipo.RETRASO_ENTREGA ? ocsPorTipo.RETRASO_ENTREGA.size : 0
+        por_retencion_precio_activas: ocsActivasPorTipo.PRODUCTO_INMOVILIZADO_PRECIO ? ocsActivasPorTipo.PRODUCTO_INMOVILIZADO_PRECIO.size : 0,
+        por_retraso: ocsPorTipo.RETRASO_ENTREGA ? ocsPorTipo.RETRASO_ENTREGA.size : 0,
+        por_retraso_activas: ocsActivasPorTipo.RETRASO_ENTREGA ? ocsActivasPorTipo.RETRASO_ENTREGA.size : 0
       },
       tasa_ocs_con_incidencia_pct: ordenesFiltradas.length > 0
         ? Number(((ocsConIncidenciasSet.size / ordenesFiltradas.length) * 100).toFixed(2))

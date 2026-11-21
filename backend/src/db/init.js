@@ -33,6 +33,7 @@ async function inicializarBaseDatos() {
       ALTER TABLE erp_laboratorios ADD COLUMN IF NOT EXISTS updated_by INTEGER;
       ALTER TABLE erp_laboratorios ADD COLUMN IF NOT EXISTS updated_by_nombre VARCHAR(150);
       ALTER TABLE erp_laboratorios ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+      UPDATE configuracion_sistema SET tolerancia_dias_retraso = 1 WHERE id = 1 AND tolerancia_dias_retraso = 0;
     `);
   } catch (_e) {
     // Si la tabla ya contiene las columnas o el driver no soporta ALTER TABLE IF NOT EXISTS
@@ -46,7 +47,7 @@ async function inicializarBaseDatos() {
          id, erp_base_url, erp_api_key, sync_interval_minutos,
          tolerancia_precio_pct, tolerancia_dias_retraso,
          margen_rentabilidad_pct, costo_hora_operativa, horas_manuales_semana, despachos_mensuales_base
-       ) VALUES ($1, $2, $3, 5, 0.00, 0, 20.00, 6.25, 8.00, 400)`,
+       ) VALUES ($1, $2, $3, 5, 0.00, 1, 20.00, 6.25, 8.00, 400)`,
       [1, env.erpBaseUrl, env.erpApiKey]
     );
   } else if (!cfgRows[0].erp_api_key && env.erpApiKey) {

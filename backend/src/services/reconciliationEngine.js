@@ -24,49 +24,54 @@ function crearClaveUnica(ocId, tipoIncidencia, sku = null) {
   return `${ocId}:${tipoIncidencia}:${sku || '__OC__'}`;
 }
 
+function normalizarFechaMedianoche(fechaInput) {
+  if (!fechaInput) return NaN;
+  const d = new Date(fechaInput);
+  if (Number.isNaN(d.getTime())) return NaN;
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
 function conciliarOrdenCompra(oc, ingreso = null, config = {}, ahora = new Date(), plazoDiasLab = null) {
   const toleranciaPrecioPct = Math.max(0, Number(config.tolerancia_precio_pct || 0));
+  const toleranciaDiasRetraso = Math.max(0, Number(config.tolerancia_dias_retraso !== undefined ? config.tolerancia_dias_retraso : 1));
   const msDia = 24 * 60 * 60 * 1000;
 
   const incidencias = [];
   const resumenReglas = [];
 
-  // Determinación de la fecha límite acordada con el proveedor:
-  // Si se indica plazoDiasLab (días configurados para este proveedor específico, default 3):
-  // la fecha pactada se calcula desde la emisión de la OC: fechaEmision + plazoDias * msDia (sin tolerancia artificial)
-  let fechaLimiteMs;
-  let fechaPactadaMs;
+  // Determinación de fechas normalizadas a medianoche UTC para evitar falsos positivos por desfase de horas/minutos
+  const emisionMidnight = normalizarFechaMedianoche(oc.fecha_emision);
+  const pactadaDocMidnight = normalizarFechaMedianoche(oc.fecha_entrega_pactada);
 
+  let pactadaMidnight;
+  let plazoDias = 3;
   if (plazoDiasLab !== null && plazoDiasLab !== undefined && !Number.isNaN(Number(plazoDiasLab))) {
-    const plazoDias = Math.max(1, Number(plazoDiasLab));
-    const fechaEmisionMs = Date.parse(oc.fecha_emision);
-    if (!Number.isNaN(fechaEmisionMs)) {
-      fechaPactadaMs = fechaEmisionMs + plazoDias * msDia;
-      fechaLimiteMs = fechaPactadaMs;
-    } else {
-      fechaPactadaMs = Date.parse(oc.fecha_entrega_pactada);
-      fechaLimiteMs = fechaPactadaMs;
-    }
+    plazoDias = Math.max(1, Number(plazoDiasLab));
+    pactadaMidnight = !Number.isNaN(emisionMidnight)
+      ? emisionMidnight + plazoDias * msDia
+      : pactadaDocMidnight;
   } else {
-    // Compatibilidad con pruebas unitarias que no pasan plazoDiasLab
-    const toleranciaDiasRetraso = Math.max(0, Number(config.tolerancia_dias_retraso || 0));
-    fechaPactadaMs = Date.parse(oc.fecha_entrega_pactada);
-    fechaLimiteMs = fechaPactadaMs + toleranciaDiasRetraso * msDia;
+    pactadaMidnight = pactadaDocMidnight;
+    if (!Number.isNaN(emisionMidnight) && !Number.isNaN(pactadaDocMidnight) && pactadaDocMidnight > emisionMidnight) {
+      plazoDias = Math.max(1, Math.round((pactadaDocMidnight - emisionMidnight) / msDia));
+    }
   }
 
-  const ahoraMs = ahora.getTime();
+  // La fecha límite contractual incluye los días de gracia (tolerancia_dias_retraso, default 1)
+  const limiteMidnight = !Number.isNaN(pactadaMidnight) ? pactadaMidnight + toleranciaDiasRetraso * msDia : NaN;
+  const ahoraMidnight = normalizarFechaMedianoche(ahora);
   let diasRetraso = 0;
 
   // Regla 3: Retraso en entrega (aplica tanto a recepciones demoradas como a OCs vencidas aún sin arribo)
-  if (!Number.isNaN(fechaLimiteMs)) {
-    const referenciaMs = ingreso
-      ? Date.parse(ingreso.fecha_recepcion_fisica)
-      : ahoraMs;
+  if (!Number.isNaN(limiteMidnight)) {
+    const referenciaMidnight = ingreso
+      ? normalizarFechaMedianoche(ingreso.fecha_recepcion_fisica)
+      : ahoraMidnight;
 
-    if (!Number.isNaN(referenciaMs) && referenciaMs > fechaLimiteMs) {
-      diasRetraso = Math.max(1, Math.ceil((referenciaMs - fechaLimiteMs) / msDia));
+    if (!Number.isNaN(referenciaMidnight) && referenciaMidnight > limiteMidnight) {
+      diasRetraso = Math.max(1, Math.round((referenciaMidnight - pactadaMidnight) / msDia));
       const descripcionRetraso = ingreso
-        ? `Ingreso físico (${ingreso.numero_guia_ingreso}) registrado ${diasRetraso} día(s) después del plazo acordado con el proveedor (${plazoDiasLab ? `${plazoDiasLab} días` : 'plazo pactado'}).`
+        ? `Ingreso físico (${ingreso.numero_guia_ingreso}) registrado ${diasRetraso} día(s) después del plazo acordado con el proveedor (${plazoDias} días pactados).`
         : `Orden de compra sin ingreso en almacén: superó el plazo acordado (${diasRetraso} día(s) de demora para reclamo logístico).`;
 
       incidencias.push({
