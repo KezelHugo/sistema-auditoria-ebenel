@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS configuracion_sistema (
   erp_base_url TEXT NOT NULL,
   erp_api_key TEXT NOT NULL DEFAULT '',
   sync_interval_minutos INTEGER NOT NULL DEFAULT 5,
-  tolerancia_precio_pct NUMERIC(5,2) NOT NULL DEFAULT 0.00,
+  tolerancia_precio_pct NUMERIC(5,2) NOT NULL DEFAULT 2.00,
   tolerancia_dias_retraso INTEGER NOT NULL DEFAULT 1,
   margen_rentabilidad_pct NUMERIC(5,2) NOT NULL DEFAULT 20.00,
   costo_hora_operativa NUMERIC(8,2) NOT NULL DEFAULT 6.25,

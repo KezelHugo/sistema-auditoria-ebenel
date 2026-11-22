@@ -32,7 +32,7 @@ function normalizarFechaMedianoche(fechaInput) {
 }
 
 function conciliarOrdenCompra(oc, ingreso = null, config = {}, ahora = new Date(), plazoDiasLab = null) {
-  const toleranciaPrecioPct = Math.max(0, Number(config.tolerancia_precio_pct || 0));
+  const toleranciaPrecioPct = Math.max(0, Number(config.tolerancia_precio_pct !== undefined ? config.tolerancia_precio_pct : 2));
   const toleranciaDiasRetraso = Math.max(0, Number(config.tolerancia_dias_retraso !== undefined ? config.tolerancia_dias_retraso : 1));
   const msDia = 24 * 60 * 60 * 1000;
 
@@ -165,12 +165,11 @@ function conciliarOrdenCompra(oc, ingreso = null, config = {}, ahora = new Date(
       });
     }
 
-    // Regla 2: Productos Inmovilizados por Diferencia de Precio (40% Pareto)
+    // Regla 2: Productos Inmovilizados por Diferencia de Precio (solo si excede la tolerancia del 2%)
     const precioMaxPermitido = precioPactado * (1 + toleranciaPrecioPct / 100);
     const excedePrecio = precioFacturado > precioMaxPermitido + 0.005;
-    const estaRetenido = disposicion === 'RETENIDO_ZONA_DEVOLUCION';
 
-    if (estaRetenido || excedePrecio) {
+    if (excedePrecio) {
       const unidadesRetenidas = recibida > 0 ? recibida : solicitada;
       const valorRetenidoItem = Number((unidadesRetenidas * precioFacturado).toFixed(2));
       montoInmovilizado = Number((montoInmovilizado + valorRetenidoItem).toFixed(2));

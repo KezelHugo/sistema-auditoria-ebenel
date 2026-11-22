@@ -123,6 +123,25 @@ test('Detecta Producto Inmovilizado por Diferencia de Precio y respeta toleranci
   const resTol = conciliarOrdenCompra(oc, ingresoDentroTolerancia, { tolerancia_precio_pct: 2, tolerancia_dias_retraso: 0 });
   assert.equal(resTol.estado_conciliacion, 'CONFORME');
   assert.equal(resTol.cantidad_incidencias, 0);
+
+  // Variación de 1.5% incluso con estado RETENIDO en almacén no supera el 2% -> CONFORME por defecto
+  const ingresoDentroToleranciaRetenido = {
+    ...ingresoDentroTolerancia,
+    items_recibidos: [{ ...ingresoDentroTolerancia.items_recibidos[0], estado_disposicion: 'RETENIDO_ZONA_DEVOLUCION' }]
+  };
+  const resTolRetenido = conciliarOrdenCompra(oc, ingresoDentroToleranciaRetenido);
+  assert.equal(resTolRetenido.estado_conciliacion, 'CONFORME');
+  assert.equal(resTolRetenido.cantidad_incidencias, 0);
+
+  // Variación de 2.5% (> 2% de tolerancia por defecto) -> CON_INCIDENCIAS
+  const ingresoSobre2Pct = {
+    ...ingresoDentroTolerancia,
+    items_recibidos: [{ ...ingresoDentroTolerancia.items_recibidos[0], precio_unitario_facturado: 10.25 }]
+  };
+  const resSobre2Pct = conciliarOrdenCompra(oc, ingresoSobre2Pct);
+  assert.equal(resSobre2Pct.estado_conciliacion, 'CON_INCIDENCIAS');
+  assert.equal(resSobre2Pct.cantidad_incidencias, 1);
+  assert.equal(resSobre2Pct.incidencias[0].tipo_incidencia, 'PRODUCTO_INMOVILIZADO_PRECIO');
 });
 
 test('Detecta OC vencida sin entrega en tránsito y retraso al recibir con tolerancia configurable', () => {
